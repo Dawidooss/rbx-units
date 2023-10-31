@@ -36,7 +36,7 @@ do
 		else
 			local _position = Movement.position
 			local _moveDirection = Movement.moveDirection
-			local _arg0 = deltaTime * Movement.moveSpeed * (if Movement.shift then 2.5 else 1) * Movement.zoom
+			local _arg0 = deltaTime * Movement.moveSpeed * (if Movement.shift then 2.5 else 1) * (Movement.zoom / 2 + 0.5)
 			Movement.position = _position + (_moveDirection * _arg0)
 		end
 		camera.CameraType = Enum.CameraType.Scriptable
@@ -45,7 +45,7 @@ do
 		camera.CFrame = _cFrame * _arg0
 	end
 	Movement.shift = false
-	Movement.moveSpeed = 15
+	Movement.moveSpeed = 25
 	Movement.zoom = 2
 	Movement.position = Vector2.new()
 	Movement.moveDirection = Vector2.new()

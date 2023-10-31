@@ -5,7 +5,7 @@ const camera = Workspace.CurrentCamera!;
 
 export default class Movement {
 	public static shift = false;
-	public static moveSpeed = 15;
+	public static moveSpeed = 25;
 	public static zoom = 2;
 	public static position = new Vector2();
 	public static moveDirection = new Vector2();
@@ -70,7 +70,9 @@ export default class Movement {
 			);
 		} else {
 			Movement.position = Movement.position.add(
-				Movement.moveDirection.mul(deltaTime * Movement.moveSpeed * (Movement.shift ? 2.5 : 1) * Movement.zoom),
+				Movement.moveDirection.mul(
+					deltaTime * Movement.moveSpeed * (Movement.shift ? 2.5 : 1) * (Movement.zoom / 2 + 0.5),
+				),
 			);
 		}
 		camera.CameraType = Enum.CameraType.Scriptable;

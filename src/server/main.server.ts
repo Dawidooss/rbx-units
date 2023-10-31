@@ -1,4 +1,5 @@
 import { Players } from "@rbxts/services";
+import Network from "shared/Network";
 
 Players.PlayerAdded.Connect((player) => {
 	player.CharacterAdded.Connect((character) => {
@@ -9,3 +10,5 @@ Players.PlayerAdded.Connect((player) => {
 		humanoid.WalkSpeed = 0;
 	});
 });
+
+Network.BindFunctions({});
