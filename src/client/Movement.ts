@@ -1,4 +1,4 @@
-import { ContextActionService, Players, TweenService, Workspace } from "@rbxts/services";
+import { ContextActionService, Players, TweenService, UserInputService, Workspace } from "@rbxts/services";
 
 const player = Players.LocalPlayer;
 const camera = Workspace.CurrentCamera!;
@@ -9,16 +9,18 @@ export default class Movement {
 	public static zoom = 2;
 	public static position = new Vector2();
 	public static moveDirection = new Vector2();
+	public static dragging = false;
 
 	private static zoomValue = new Instance("NumberValue");
 
 	public static Init() {
 		Movement.zoomValue.Value = 1;
 
-		ContextActionService.BindAction(
+		ContextActionService.BindActionAtPriority(
 			"movement",
 			this.HandleInput,
 			false,
+			100,
 			Enum.KeyCode.A,
 			Enum.KeyCode.D,
 			Enum.KeyCode.W,
@@ -26,6 +28,7 @@ export default class Movement {
 			Enum.KeyCode.F,
 			Enum.KeyCode.LeftShift,
 			Enum.UserInputType.MouseWheel,
+			Enum.UserInputType.MouseButton2,
 		);
 	}
 
@@ -37,6 +40,11 @@ export default class Movement {
 				TweenService.Create(Movement.zoomValue, new TweenInfo(0.2, Enum.EasingStyle.Sine), {
 					Value: Movement.zoom,
 				}).Play();
+			} else if (input.UserInputType === Enum.UserInputType.MouseButton2) {
+				Movement.dragging = begin;
+				UserInputService.MouseBehavior = begin
+					? Enum.MouseBehavior.LockCurrentPosition
+					: Enum.MouseBehavior.Default;
 			} else if (input.UserInputType === Enum.UserInputType.Keyboard) {
 				if (input.KeyCode === Enum.KeyCode.D) {
 					Movement.moveDirection = new Vector2(begin ? 1 : 0, Movement.moveDirection.Y);
@@ -54,10 +62,17 @@ export default class Movement {
 	};
 
 	public static Update(deltaTime: number) {
-		Movement.position = Movement.position.add(
-			Movement.moveDirection.mul(deltaTime * Movement.moveSpeed * (Movement.shift ? 1.5 : 1)),
-		);
+		const mouseDelta = UserInputService.GetMouseDelta();
 
+		if (Movement.dragging) {
+			Movement.position = Movement.position.add(
+				mouseDelta.mul((deltaTime * Movement.moveSpeed * Movement.zoom) / 4),
+			);
+		} else {
+			Movement.position = Movement.position.add(
+				Movement.moveDirection.mul(deltaTime * Movement.moveSpeed * (Movement.shift ? 2.5 : 1) * Movement.zoom),
+			);
+		}
 		camera.CameraType = Enum.CameraType.Scriptable;
 		camera.CFrame = new CFrame(Movement.position.X, Movement.zoomValue.Value * 25, Movement.position.Y).mul(
 			CFrame.Angles(-math.pi / 2, 0, 0),
