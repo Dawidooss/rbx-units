@@ -1,0 +1,22 @@
+{
+  "name": "rbx-units",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "rbxtsc",
+    "watch": "rbxtsc -w"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rbxts/compiler-types": "^2.2.0-types.0",
+    "@rbxts/types": "^1.0.729",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@rbxts/services": "^1.5.1"
+  }
+}
