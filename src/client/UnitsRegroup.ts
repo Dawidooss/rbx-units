@@ -2,16 +2,21 @@ import { ContextActionService, ReplicatedFirst, RunService, Workspace } from "@r
 import Selection from "./Selection";
 import Utils from "./Utils";
 import UnitsGroup, { Formation } from "./UnitsGroup";
+import { UnitSelectionType } from "./Unit";
 
 const camera = Workspace.CurrentCamera!;
 
 export default abstract class UnitsRegroup {
-	private static arrow: MovementArrow;
+	private static circle: MovementCircle;
+	private static arrow: MovementCircle["Arrow"];
 	private static regroupPosition = new Vector3();
 	private static enabled = false;
+	private static rotation = 0;
+	private static spread = 2;
 
 	public static Init() {
-		UnitsRegroup.arrow = ReplicatedFirst.WaitForChild("MovementArrow")!.Clone() as MovementArrow;
+		UnitsRegroup.circle = ReplicatedFirst.WaitForChild("MovementCircle")!.Clone() as MovementCircle;
+		UnitsRegroup.arrow = UnitsRegroup.circle.Arrow;
 
 		// handle if LMB pressed and relesed
 		ContextActionService.BindAction(
@@ -23,8 +28,13 @@ export default abstract class UnitsRegroup {
 	}
 
 	private static Regroup() {
-		print(UnitsRegroup.arrow.GetPivot().Position);
-		UnitsGroup.Move(Selection.selectedUnits, UnitsRegroup.arrow.GetPivot().Position, Formation.Normal);
+		UnitsGroup.Move(
+			Selection.selectedUnits,
+			UnitsRegroup.circle.GetPivot().Position,
+			Formation.Normal,
+			UnitsRegroup.rotation,
+			UnitsRegroup.spread,
+		);
 	}
 
 	private static Enable(state: boolean) {
@@ -42,7 +52,7 @@ export default abstract class UnitsRegroup {
 		} else {
 			UnitsRegroup.Regroup();
 			RunService.UnbindFromRenderStep("UnitsRegroup");
-			UnitsRegroup.arrow.Parent = undefined;
+			UnitsRegroup.circle.Parent = undefined;
 		}
 	}
 
@@ -56,28 +66,54 @@ export default abstract class UnitsRegroup {
 			mouseHitResult.Position.Z,
 		);
 
-		UnitsRegroup.arrow.PivotTo(new CFrame(UnitsRegroup.regroupPosition).mul(CFrame.Angles(0, 0, -math.pi / 2)));
-		UnitsRegroup.arrow.Parent = camera;
+		UnitsRegroup.circle.PivotTo(new CFrame(UnitsRegroup.regroupPosition).mul(CFrame.Angles(0, 0, -math.pi / 2)));
+		UnitsRegroup.circle.Parent = camera;
 
-		const arrowLength = math.clamp(groundedMousePosition.sub(UnitsRegroup.regroupPosition).Magnitude, 0.5, 8);
+		const arrowLength = groundedMousePosition.sub(UnitsRegroup.regroupPosition).Magnitude;
+		const fixedArrowLength = math.clamp(arrowLength, 4, 12);
+
 		const arrowMiddle = new CFrame(UnitsRegroup.regroupPosition, groundedMousePosition).mul(
-			new CFrame(0, 0, -arrowLength / 2),
+			new CFrame(0, 0, -fixedArrowLength / 2),
 		).Position;
 
-		UnitsRegroup.arrow.Arrow.PivotTo(new CFrame(arrowMiddle, UnitsRegroup.regroupPosition));
-		UnitsRegroup.arrow.Arrow.Length.Size = new Vector3(
-			arrowLength,
-			UnitsRegroup.arrow.Arrow.Length.Size.Y,
-			UnitsRegroup.arrow.Arrow.Length.Size.Z,
+		UnitsRegroup.arrow.Parent = arrowLength < 3 ? undefined : UnitsRegroup.circle;
+
+		UnitsRegroup.arrow.PivotTo(new CFrame(arrowMiddle, UnitsRegroup.regroupPosition));
+		UnitsRegroup.arrow.Length.Size = new Vector3(
+			fixedArrowLength,
+			UnitsRegroup.arrow.Length.Size.Y,
+			UnitsRegroup.arrow.Length.Size.Z,
 		);
 
-		UnitsRegroup.arrow.Arrow.Length.Attachment.CFrame = new CFrame(arrowLength / 2, 0, 0);
-		UnitsRegroup.arrow.Arrow.Left.PivotTo(UnitsRegroup.arrow.Arrow.Length.Attachment.WorldCFrame);
-		UnitsRegroup.arrow.Arrow.Right.PivotTo(UnitsRegroup.arrow.Arrow.Length.Attachment.WorldCFrame);
+		UnitsRegroup.arrow.Length.Attachment.CFrame = new CFrame(fixedArrowLength / 2, 0, 0);
+		UnitsRegroup.arrow.Left.PivotTo(UnitsRegroup.arrow.Length.Attachment.WorldCFrame);
+		UnitsRegroup.arrow.Right.PivotTo(UnitsRegroup.arrow.Length.Attachment.WorldCFrame);
+
+		UnitsRegroup.rotation = new CFrame(UnitsRegroup.regroupPosition, groundedMousePosition).ToOrientation()[1];
+		UnitsRegroup.spread = fixedArrowLength;
+
+		// visualise positions
+		const positions = UnitsGroup.GetPositionsInFormation(
+			Selection.selectedUnits.size(),
+			UnitsRegroup.circle.GetPivot().Position,
+			Formation.Normal,
+			UnitsRegroup.rotation,
+			UnitsRegroup.spread,
+		);
+
+		UnitsRegroup.circle.Positions.ClearAllChildren();
+		positions.forEach((position, i) => {
+			if (i === 0) return;
+			const positionPart = UnitsRegroup.circle.Middle.Clone() as BasePart;
+			positionPart.PivotTo(new CFrame(position).mul(CFrame.Angles(0, 0, math.pi / 2)));
+			positionPart.Parent = UnitsRegroup.circle.Positions;
+		});
 	}
 }
 
-type MovementArrow = Model & {
+export type MovementCircle = Model & {
+	Positions: Model;
+	Beam: Beam;
 	Arrow: Model & {
 		Length: BasePart & {
 			Attachment: Attachment;
@@ -85,5 +121,7 @@ type MovementArrow = Model & {
 		Left: BasePart;
 		Right: BasePart;
 	};
-	Middle: BasePart;
+	Middle: BasePart & {
+		Attachment: Attachment;
+	};
 };

@@ -136,10 +136,12 @@ export default abstract class Selection {
 		Selection.selectedUnits.forEach((unit) => {
 			unit.Select(UnitSelectionType.None);
 		});
+		Selection.selectedUnits = [];
 	}
 
 	public static SelectUnits(units: Array<Unit>) {
 		units.forEach((unit) => {
+			if (this.selectedUnits.size() >= 30) return;
 			unit.Select(UnitSelectionType.Selected);
 			Selection.selectedUnits.push(unit);
 		});

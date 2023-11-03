@@ -165,10 +165,14 @@ do
 		for _k, _v in _selectedUnits do
 			_arg0(_v, _k - 1, _selectedUnits)
 		end
+		Selection.selectedUnits = {}
 	end
 	function Selection:SelectUnits(units)
 		local _units = units
 		local _arg0 = function(unit)
+			if #self.selectedUnits >= 30 then
+				return nil
+			end
 			unit:Select(UnitSelectionType.Selected)
 			local _selectedUnits = Selection.selectedUnits
 			local _unit = unit
