@@ -1,10 +1,11 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Network = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Network")
 local Unit = TS.import(script, script.Parent, "Unit").default
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local HttpService = _services.HttpService
 local Workspace = _services.Workspace
+local camera = Workspace.CurrentCamera
 local UnitsManager
 do
 	UnitsManager = setmetatable({}, {
@@ -51,40 +52,30 @@ do
 	end
 	function UnitsManager:UpdateUnit(unitId, data)
 	end
-	function UnitsManager:SelectUnitsAt(min, max)
-		local selectedUnits = {}
-		if max then
-			-- select units at bounds
-			local _units = UnitsManager.units
-			local _arg0 = function(unit)
-				if unit.position.X >= min.X and (unit.position.X <= max.X and (unit.position.Y >= min.Y and (unit.position.Y <= max.Y and (unit.position.Z >= min.Z and unit.position.Z <= max.Z)))) then
-					local _selectedUnits = selectedUnits
-					local _unit = unit
-					table.insert(_selectedUnits, _unit)
-				end
-			end
-			for _k, _v in _units do
-				_arg0(_v, _k, _units)
-			end
-		else
-			local closestUnit
-			local closestUnitDistance = math.huge
-			-- select unit at position
-			for _, unit in UnitsManager.units do
-				local _position = unit.position
-				local _min = min
-				local distance = (_position - _min).Magnitude
-				if distance <= 2 and distance < closestUnitDistance then
-					closestUnit = unit
-					closestUnitDistance = distance
-				end
-			end
-			if closestUnit then
-				local _selectedUnits = selectedUnits
-				local _closestUnit = closestUnit
-				table.insert(_selectedUnits, _closestUnit)
+	function UnitsManager:SelectUnits(selectedUnits)
+		local _selectedUnits = self.selectedUnits
+		local _arg0 = function(unit)
+			unit:Select(false)
+		end
+		for _k, _v in _selectedUnits do
+			_arg0(_v, _k - 1, _selectedUnits)
+		end
+		local _selectedUnits_1 = selectedUnits
+		local _arg0_1 = function(unit)
+			local _result = unit
+			if _result ~= nil then
+				_result:Select(true)
 			end
 		end
+		for _k, _v in _selectedUnits_1 do
+			_arg0_1(_v, _k - 1, _selectedUnits_1)
+		end
+		self.selectedUnits = selectedUnits
+	end
+	function UnitsManager:GetUnit(unitId)
+		local _units = UnitsManager.units
+		local _unitId = unitId
+		return _units[_unitId]
 	end
 	UnitsManager.units = {}
 	UnitsManager.cache = Instance.new("Folder", Workspace)
