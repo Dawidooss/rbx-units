@@ -10,21 +10,11 @@ local player = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 local Movement
 do
-	Movement = setmetatable({}, {
-		__tostring = function()
-			return "Movement"
-		end,
-	})
-	Movement.__index = Movement
-	function Movement.new(...)
-		local self = setmetatable({}, Movement)
-		return self:constructor(...) or self
-	end
+	Movement = {}
 	function Movement:constructor()
 	end
 	function Movement:Init()
-		Movement.zoomValue.Value = 1
-		ContextActionService:BindActionAtPriority("movement", self.HandleInput, false, 100, Enum.KeyCode.A, Enum.KeyCode.D, Enum.KeyCode.W, Enum.KeyCode.S, Enum.KeyCode.F, Enum.KeyCode.LeftShift, Enum.UserInputType.MouseWheel, Enum.UserInputType.MouseButton2)
+		ContextActionService:BindActionAtPriority("movement", Movement.HandleInput, false, 100, Enum.KeyCode.A, Enum.KeyCode.D, Enum.KeyCode.W, Enum.KeyCode.S, Enum.KeyCode.F, Enum.KeyCode.LeftShift, Enum.UserInputType.MouseWheel)
 	end
 	function Movement:Update(deltaTime)
 		local mouseDelta = UserInputService:GetMouseDelta()
@@ -40,9 +30,10 @@ do
 			Movement.position = _position + (_moveDirection * _arg0)
 		end
 		camera.CameraType = Enum.CameraType.Scriptable
-		local _cFrame = CFrame.new(Movement.position.X, Movement.zoomValue.Value * 25, Movement.position.Y)
+		local _cFrame = CFrame.new(Movement.position.X, 0, Movement.position.Y)
+		local _value = Movement.zoomCFrame.Value
 		local _arg0 = CFrame.Angles(-math.pi / 2, 0, 0)
-		camera.CFrame = _cFrame * _arg0
+		camera.CFrame = _cFrame * _value * _arg0
 	end
 	Movement.shift = false
 	Movement.moveSpeed = 25
@@ -50,18 +41,26 @@ do
 	Movement.position = Vector2.new()
 	Movement.moveDirection = Vector2.new()
 	Movement.dragging = false
-	Movement.zoomValue = Instance.new("NumberValue")
+	Movement.zoomCFrame = Instance.new("CFrameValue")
 	Movement.HandleInput = function(action, state, input)
 		local begin = state == Enum.UserInputState.Begin
 		if action == "movement" then
 			if input.UserInputType == Enum.UserInputType.MouseWheel then
 				Movement.zoom = math.clamp(Movement.zoom - input.Position.Z, 1, 5)
-				TweenService:Create(Movement.zoomValue, TweenInfo.new(0.2, Enum.EasingStyle.Sine), {
-					Value = Movement.zoom,
-				}):Play()
-			elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-				Movement.dragging = begin
-				UserInputService.MouseBehavior = if begin then Enum.MouseBehavior.LockCurrentPosition else Enum.MouseBehavior.Default
+				local _fn = TweenService
+				local _exp = Movement.zoomCFrame
+				local _exp_1 = TweenInfo.new(0.2, Enum.EasingStyle.Sine)
+				local _object = {}
+				local _left = "Value"
+				local _cFrame = CFrame.new(0, Movement.zoom * 25, 0)
+				local _arg0 = CFrame.Angles(math.rad((5 - Movement.zoom) * 5), 0, 0)
+				_object[_left] = _cFrame * _arg0
+				_fn:Create(_exp, _exp_1, _object):Play()
+				-- } else if (input.UserInputType === Enum.UserInputType.MouseButton2) {
+				-- Movement.dragging = begin;
+				-- UserInputService.MouseBehavior = begin
+				-- ? Enum.MouseBehavior.LockCurrentPosition
+				-- : Enum.MouseBehavior.Default;
 			elseif input.UserInputType == Enum.UserInputType.Keyboard then
 				if input.KeyCode == Enum.KeyCode.D then
 					Movement.moveDirection = Vector2.new(if begin then 1 else 0, Movement.moveDirection.Y)

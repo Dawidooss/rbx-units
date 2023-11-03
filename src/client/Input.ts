@@ -1,58 +1,54 @@
-import { ContextActionService, UserInputService, Workspace } from "@rbxts/services";
+import { ContextActionService, Players, PolicyService, UserInputService, Workspace } from "@rbxts/services";
 import UnitsManager from "./UnitsManager";
-import inset from "./GuiInset";
+import guiInset from "./GuiInset";
 import Unit from "./Unit";
+import SelectionBox from "./Selection";
 
 const camera = Workspace.CurrentCamera!;
+const player = Players.LocalPlayer;
 
-export default class Input {
+export default abstract class Input {
+	private static holdingButtons = new Map<Enum.KeyCode, boolean>();
+	private static binds = new Map<KeyBinding, Callback>();
+
 	public static Init() {
-		print("init");
-		ContextActionService.BindAction(
-			"input",
-			this.HandleInput,
-			false,
-			Enum.KeyCode.F,
-			Enum.UserInputType.MouseButton1,
-		);
+		UserInputService.InputBegan.Connect((input, processed) => {
+			Input.HandleInput(input);
+		});
+
+		UserInputService.InputEnded.Connect((input, processed) => {
+			Input.HandleInput(input);
+		});
 	}
 
-	private static HandleInput = (action: string, state: Enum.UserInputState, input: InputObject) => {
-		if (action !== "input") return;
+	private static HandleInput = (input: InputObject) => {
+		const holding = input.UserInputState === Enum.UserInputState.Begin;
+		Input.holdingButtons.set(input.KeyCode, holding);
 
-		const begin = state === Enum.UserInputState.Begin;
-
-		const mousePosition = UserInputService.GetMouseLocation().sub(new Vector2(0, inset));
-		const rayData = camera.ScreenPointToRay(mousePosition.X, mousePosition.Y, 1);
-
-		const raycastParams = new RaycastParams();
-		raycastParams.FilterType = Enum.RaycastFilterType.Exclude;
-
-		raycastParams.FilterDescendantsInstances = [camera, UnitsManager.cache];
-		const terrainHit = Workspace.Raycast(rayData.Origin, rayData.Direction.mul(10000), raycastParams);
-		raycastParams.FilterDescendantsInstances = [camera];
-		const unitHit = Workspace.Raycast(rayData.Origin, rayData.Direction.mul(10000), raycastParams);
-
-		if (input.UserInputType === Enum.UserInputType.Keyboard) {
-			if (input.KeyCode === Enum.KeyCode.F && !begin) {
-				if (terrainHit?.Position) {
-					UnitsManager.CreateUnit(UnitsManager.GenerateUnitId(), "Dummy", terrainHit.Position);
-				}
+		Input.binds.forEach((callback, keyBinding) => {
+			if (
+				(input.KeyCode === keyBinding.button || input.UserInputType === keyBinding.button) &&
+				input.UserInputState === keyBinding.state
+			) {
+				callback();
 			}
-		} else if (input.UserInputType === Enum.UserInputType.MouseButton1) {
-			if (unitHit?.Instance && unitHit.Instance.Name !== "SelectionCircle") {
-				const unitModel = unitHit.Instance.Parent;
-				const unitId = unitModel!.Name;
-
-				const unit = UnitsManager.GetUnit(unitId);
-				if (unit) {
-					UnitsManager.SelectUnits([unit]);
-				} else {
-					UnitsManager.SelectUnits([]);
-				}
-			} else {
-				UnitsManager.SelectUnits([]);
-			}
-		}
+		});
 	};
+
+	public static IsButtonHolding(button: Enum.KeyCode): boolean {
+		return Input.holdingButtons.get(button) || false;
+	}
+
+	public static Bind(button: Enum.KeyCode | Enum.UserInputType, state: Enum.UserInputState, callback: Callback) {
+		Input.binds.set(new KeyBinding(button, state), callback);
+	}
+}
+
+export class KeyBinding {
+	public button: Enum.KeyCode | Enum.UserInputType;
+	public state: Enum.UserInputState;
+	constructor(button: Enum.KeyCode | Enum.UserInputType, state: Enum.UserInputState) {
+		this.button = button;
+		this.state = state;
+	}
 }

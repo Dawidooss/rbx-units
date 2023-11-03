@@ -3,7 +3,7 @@ import { ContextActionService, Players, TweenService, UserInputService, Workspac
 const player = Players.LocalPlayer;
 const camera = Workspace.CurrentCamera!;
 
-export default class Movement {
+export default abstract class Movement {
 	public static shift = false;
 	public static moveSpeed = 25;
 	public static zoom = 2;
@@ -11,14 +11,12 @@ export default class Movement {
 	public static moveDirection = new Vector2();
 	public static dragging = false;
 
-	private static zoomValue = new Instance("NumberValue");
+	private static zoomCFrame = new Instance("CFrameValue");
 
 	public static Init() {
-		Movement.zoomValue.Value = 1;
-
 		ContextActionService.BindActionAtPriority(
 			"movement",
-			this.HandleInput,
+			Movement.HandleInput,
 			false,
 			100,
 			Enum.KeyCode.A,
@@ -28,7 +26,7 @@ export default class Movement {
 			Enum.KeyCode.F,
 			Enum.KeyCode.LeftShift,
 			Enum.UserInputType.MouseWheel,
-			Enum.UserInputType.MouseButton2,
+			// Enum.UserInputType.MouseButton2,
 		);
 	}
 
@@ -37,14 +35,16 @@ export default class Movement {
 		if (action === "movement") {
 			if (input.UserInputType === Enum.UserInputType.MouseWheel) {
 				Movement.zoom = math.clamp(Movement.zoom - input.Position.Z, 1, 5);
-				TweenService.Create(Movement.zoomValue, new TweenInfo(0.2, Enum.EasingStyle.Sine), {
-					Value: Movement.zoom,
+				TweenService.Create(Movement.zoomCFrame, new TweenInfo(0.2, Enum.EasingStyle.Sine), {
+					Value: new CFrame(0, Movement.zoom * 25, 0).mul(
+						CFrame.Angles(math.rad((5 - Movement.zoom) * 5), 0, 0),
+					),
 				}).Play();
-			} else if (input.UserInputType === Enum.UserInputType.MouseButton2) {
-				Movement.dragging = begin;
-				UserInputService.MouseBehavior = begin
-					? Enum.MouseBehavior.LockCurrentPosition
-					: Enum.MouseBehavior.Default;
+				// } else if (input.UserInputType === Enum.UserInputType.MouseButton2) {
+				// Movement.dragging = begin;
+				// UserInputService.MouseBehavior = begin
+				// ? Enum.MouseBehavior.LockCurrentPosition
+				// : Enum.MouseBehavior.Default;
 			} else if (input.UserInputType === Enum.UserInputType.Keyboard) {
 				if (input.KeyCode === Enum.KeyCode.D) {
 					Movement.moveDirection = new Vector2(begin ? 1 : 0, Movement.moveDirection.Y);
@@ -76,8 +76,8 @@ export default class Movement {
 			);
 		}
 		camera.CameraType = Enum.CameraType.Scriptable;
-		camera.CFrame = new CFrame(Movement.position.X, Movement.zoomValue.Value * 25, Movement.position.Y).mul(
-			CFrame.Angles(-math.pi / 2, 0, 0),
-		);
+		camera.CFrame = new CFrame(Movement.position.X, 0, Movement.position.Y)
+			.mul(Movement.zoomCFrame.Value)
+			.mul(CFrame.Angles(-math.pi / 2, 0, 0));
 	}
 }

@@ -34,52 +34,34 @@ do
 	function UnitsManager:CreateUnit(unitId, unitType, position)
 		local unit = Unit.new(unitId, unitType, position)
 		unit.model.Parent = UnitsManager.cache
-		local _units = self.units
+		local _units = UnitsManager.units
 		local _unitId = unitId
 		_units[_unitId] = unit
 	end
 	function UnitsManager:RemoveUnit(unitId)
-		local _units = self.units
+		local _units = UnitsManager.units
 		local _unitId = unitId
 		local unit = _units[_unitId]
 		if not unit then
 			return nil
 		end
-		local _units_1 = self.units
+		local _units_1 = UnitsManager.units
 		local _unitId_1 = unitId
 		_units_1[_unitId_1] = nil
 		unit:Destroy()
 	end
 	function UnitsManager:UpdateUnit(unitId, data)
 	end
-	function UnitsManager:SelectUnits(selectedUnits)
-		local _selectedUnits = self.selectedUnits
-		local _arg0 = function(unit)
-			unit:Select(false)
-		end
-		for _k, _v in _selectedUnits do
-			_arg0(_v, _k - 1, _selectedUnits)
-		end
-		local _selectedUnits_1 = selectedUnits
-		local _arg0_1 = function(unit)
-			local _result = unit
-			if _result ~= nil then
-				_result:Select(true)
-			end
-		end
-		for _k, _v in _selectedUnits_1 do
-			_arg0_1(_v, _k - 1, _selectedUnits_1)
-		end
-		self.selectedUnits = selectedUnits
-	end
 	function UnitsManager:GetUnit(unitId)
 		local _units = UnitsManager.units
 		local _unitId = unitId
 		return _units[_unitId]
 	end
+	function UnitsManager:GetUnits()
+		return UnitsManager.units
+	end
 	UnitsManager.units = {}
 	UnitsManager.cache = Instance.new("Folder", Workspace)
-	UnitsManager.selectedUnits = {}
 end
 return {
 	default = UnitsManager,
