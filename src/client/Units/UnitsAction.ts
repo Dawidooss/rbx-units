@@ -5,6 +5,7 @@ import Formation from "./Formations/Formation";
 import Input from "client/Input";
 import Selection from "./Selection";
 import Normal from "./Formations/Normal";
+import Circle from "./Formations/Circle";
 
 const camera = Workspace.CurrentCamera!;
 
@@ -22,7 +23,7 @@ export default abstract class UnitsAction {
 		let endCallback: Callback | undefined;
 		Input.Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.Begin, () => {
 			const units = Selection.selectedUnits;
-			const formation = new Normal();
+			const formation = new Circle();
 			endCallback = UnitsAction.GetActionCFrame(units, formation, [2, 12], (cframe: CFrame, spread: number) => {
 				UnitsAction.MoveUnits(units, cframe, formation, spread);
 				formation.Destroy();

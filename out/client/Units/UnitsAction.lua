@@ -6,7 +6,7 @@ local Workspace = _services.Workspace
 local Utils = TS.import(script, script.Parent.Parent, "Utils").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
 local Selection = TS.import(script, script.Parent, "Selection").default
-local Normal = TS.import(script, script.Parent, "Formations", "Normal").default
+local Circle = TS.import(script, script.Parent, "Formations", "Circle").default
 local camera = Workspace.CurrentCamera
 local UnitsAction
 do
@@ -17,7 +17,7 @@ do
 		local endCallback
 		Input:Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.Begin, function()
 			local units = Selection.selectedUnits
-			local formation = Normal.new()
+			local formation = Circle.new()
 			endCallback = UnitsAction:GetActionCFrame(units, formation, { 2, 12 }, function(cframe, spread)
 				UnitsAction:MoveUnits(units, cframe, formation, spread)
 				formation:Destroy()

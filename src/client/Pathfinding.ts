@@ -31,7 +31,7 @@ export default class Pathfinding {
 
 		this.path = PathfindingService.CreatePath(agentParams);
 
-		this.visualisation = ReplicatedFirst.FindFirstChild("MovementCircle")!.Clone() as ActionCircle;
+		this.visualisation = ReplicatedFirst.FindFirstChild("NormalAction")!.Clone() as ActionCircle;
 		this.visualisationPart = this.visualisation.Middle;
 
 		this.visualisation.Name = "PathVisualisation";

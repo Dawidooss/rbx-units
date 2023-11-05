@@ -34,10 +34,12 @@ do
 				if not (i < size) then
 					break
 				end
-				local row = math.floor(i / 10)
-				local rowPosition = math.pow(-1, i) * math.ceil((i - row * 10) / 2)
-				local offset = CFrame.new(rowPosition * spread, 0, row * spread)
-				local cframe = mainCFrame * offset
+				local rotation = (360 / size) * i
+				local _mainCFrame = mainCFrame
+				local _arg0 = CFrame.Angles(0, math.rad(rotation), 0)
+				local _cFrame = CFrame.new(0, 0, spread)
+				local _arg0_1 = CFrame.Angles(0, math.pi, 0)
+				local cframe = _mainCFrame * _arg0 * _cFrame * _arg0_1
 				table.insert(cframes, cframe)
 			end
 		end
@@ -49,30 +51,7 @@ do
 		end
 		self.circle:PivotTo(cframe)
 		self.circle.Parent = camera
-		self.arrow.Parent = if spread < 2 then nil else self.circle
-		local _cframe = cframe
-		local _cFrame = CFrame.new(0, 0, -spread / 2)
-		local arrowMiddle = (_cframe * _cFrame).Position
-		self.arrow:PivotTo(CFrame.new(arrowMiddle, cframe.Position))
-		self.arrow.Length.Size = Vector3.new(spread, self.arrow.Length.Size.Y, self.arrow.Length.Size.Z)
-		self.arrow.Length.Attachment.CFrame = CFrame.new(spread / 2, 0, 0)
-		self.arrow.Left:PivotTo(self.arrow.Length.Attachment.WorldCFrame)
-		self.arrow.Right:PivotTo(self.arrow.Length.Attachment.WorldCFrame)
-		-- visualise positions
-		local mainCFrame = self.circle:GetPivot()
-		local cframes = self:GetCFramesInFormation(#units, mainCFrame, spread)
-		self.circle.Positions:ClearAllChildren()
-		local _arg0 = function(cframe, i)
-			if i == 0 then
-				return nil
-			end
-			local positionPart = self.circle.Middle:Clone()
-			positionPart:PivotTo(cframe)
-			positionPart.Parent = self.circle.Positions
-		end
-		for _k, _v in cframes do
-			_arg0(_v, _k - 1, cframes)
-		end
+		self.circle.Middle.Size = Vector3.new(self.circle.Middle.Size.X, spread * 2, spread * 2)
 	end
 end
 return {

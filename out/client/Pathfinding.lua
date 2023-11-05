@@ -32,7 +32,7 @@ do
 		self.unit = unit
 		self.agent = unit.model
 		self.path = PathfindingService:CreatePath(agentParams)
-		self.visualisation = ReplicatedFirst:FindFirstChild("MovementCircle"):Clone()
+		self.visualisation = ReplicatedFirst:FindFirstChild("NormalAction"):Clone()
 		self.visualisationPart = self.visualisation.Middle
 		self.visualisation.Name = "PathVisualisation"
 		self.visualisation.Parent = self.unit.model
