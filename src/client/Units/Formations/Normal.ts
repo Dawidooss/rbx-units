@@ -1,7 +1,12 @@
+import { StarterGui } from "@rbxts/services";
 import Formation from "./Formation";
 
-export default class Normal implements Formation {
-	public GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): CFrame[] {
+export default class Normal extends Formation {
+	constructor() {
+		super("NormalAction");
+	}
+
+	GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 
 		for (let i = 0; i < size; i++) {

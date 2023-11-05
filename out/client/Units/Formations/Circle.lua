@@ -1,42 +1,53 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
-local ReplicatedFirst = _services.ReplicatedFirst
-local Workspace = _services.Workspace
+local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
+local Formation = TS.import(script, script.Parent, "Formation").default
 local camera = Workspace.CurrentCamera
-local Formation
+local Circle
 do
-	Formation = {}
-	function Formation:constructor(actionType)
-		self.destroyed = false
-		self.circle = ReplicatedFirst:WaitForChild(actionType):Clone()
-		self.arrow = self.circle.Arrow
+	local super = Formation
+	Circle = setmetatable({}, {
+		__tostring = function()
+			return "Circle"
+		end,
+		__index = super,
+	})
+	Circle.__index = Circle
+	function Circle.new(...)
+		local self = setmetatable({}, Circle)
+		return self:constructor(...) or self
 	end
-	function Formation:VisualisePositions(units, cframe, spread)
+	function Circle:constructor()
+		super.constructor(self, "CircularAction")
+	end
+	function Circle:GetCFramesInFormation(size, mainCFrame, spread)
+		local cframes = {}
+		do
+			local i = 0
+			local _shouldIncrement = false
+			while true do
+				if _shouldIncrement then
+					i += 1
+				else
+					_shouldIncrement = true
+				end
+				if not (i < size) then
+					break
+				end
+				local row = math.floor(i / 10)
+				local rowPosition = math.pow(-1, i) * math.ceil((i - row * 10) / 2)
+				local offset = CFrame.new(rowPosition * spread, 0, row * spread)
+				local cframe = mainCFrame * offset
+				table.insert(cframes, cframe)
+			end
+		end
+		return cframes
+	end
+	function Circle:VisualisePositions(units, cframe, spread)
 		if self.destroyed then
 			return nil
 		end
-		if spread > 2 then
-			self.circle:PivotTo(cframe)
-		else
-			local medianPosition = Vector3.new()
-			local _units = units
-			local _arg0 = function(unit)
-				local _medianPosition = medianPosition
-				local _position = unit.model:GetPivot().Position
-				medianPosition = _medianPosition + _position
-			end
-			for _k, _v in _units do
-				_arg0(_v, _k - 1, _units)
-			end
-			local _medianPosition = medianPosition
-			local _arg0_1 = #units
-			medianPosition = _medianPosition / _arg0_1
-			local _fn = self.circle
-			local _cFrame = CFrame.new(cframe.Position, medianPosition)
-			local _arg0_2 = CFrame.Angles(0, math.pi, 0)
-			_fn:PivotTo(_cFrame * _arg0_2)
-		end
+		self.circle:PivotTo(cframe)
 		self.circle.Parent = camera
 		self.arrow.Parent = if spread < 2 then nil else self.circle
 		local _cframe = cframe
@@ -63,11 +74,7 @@ do
 			_arg0(_v, _k - 1, cframes)
 		end
 	end
-	function Formation:Destroy()
-		self.destroyed = true
-		self.circle:Destroy()
-	end
 end
 return {
-	default = Formation,
+	default = Circle,
 }

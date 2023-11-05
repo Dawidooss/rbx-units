@@ -20,8 +20,8 @@ export default class Pathfinding {
 	private pathId = "";
 	private moveToCurrentWaypointTries = 0;
 
-	private visualisation: MovementCircle;
-	private visualisationPart: MovementCircle["Middle"];
+	private visualisation: ActionCircle;
+	private visualisationPart: ActionCircle["Middle"];
 	private beamAttachment: Attachment;
 	private loopConnection: RBXScriptConnection | undefined;
 
@@ -31,7 +31,7 @@ export default class Pathfinding {
 
 		this.path = PathfindingService.CreatePath(agentParams);
 
-		this.visualisation = ReplicatedFirst.FindFirstChild("MovementCircle")!.Clone() as MovementCircle;
+		this.visualisation = ReplicatedFirst.FindFirstChild("MovementCircle")!.Clone() as ActionCircle;
 		this.visualisationPart = this.visualisation.Middle;
 
 		this.visualisation.Name = "PathVisualisation";
@@ -197,7 +197,7 @@ export default class Pathfinding {
 				continue;
 			}
 
-			const visualisationPart = child as MovementCircle["Middle"];
+			const visualisationPart = child as ActionCircle["Middle"];
 			const toTargetCFrameDistance = visualisationPart.Beam.Attachment0!.WorldPosition.sub(
 				visualisationPart.Beam.Attachment1!.WorldPosition,
 			).Magnitude;

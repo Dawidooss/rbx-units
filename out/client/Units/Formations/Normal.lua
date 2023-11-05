@@ -1,10 +1,14 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
+local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
+local Formation = TS.import(script, script.Parent, "Formation").default
 local Normal
 do
+	local super = Formation
 	Normal = setmetatable({}, {
 		__tostring = function()
 			return "Normal"
 		end,
+		__index = super,
 	})
 	Normal.__index = Normal
 	function Normal.new(...)
@@ -12,6 +16,7 @@ do
 		return self:constructor(...) or self
 	end
 	function Normal:constructor()
+		super.constructor(self, "NormalAction")
 	end
 	function Normal:GetCFramesInFormation(size, mainCFrame, spread)
 		local cframes = {}

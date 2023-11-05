@@ -1,48 +1,72 @@
-import { ContextActionService, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
-import Selection from "./Selection";
+import { RunService, Workspace } from "@rbxts/services";
 import Utils from "../Utils";
-import Unit, { UnitSelectionType } from "./Unit";
+import Unit from "./Unit";
 import Formation from "./Formations/Formation";
+import Input from "client/Input";
+import Selection from "./Selection";
 import Normal from "./Formations/Normal";
 
 const camera = Workspace.CurrentCamera!;
 
-export default abstract class UnitsMovement {
-	public static formationSelected = new Normal();
+export default abstract class UnitsAction {
+	public static enabled = false;
 
-	private static actionCFramePromise: Promise<CFrame> | undefined;
-	private static regroupPosition = new Vector3();
-
-	private static circle: MovementCircle;
-	private static arrow: MovementCircle["Arrow"];
-	private static enabled = false;
+	private static units: Unit[];
+	private static formationSelected: Formation;
+	private static spreadLimits: [number, number];
+	private static cframe = new CFrame();
+	private static startPosition = new Vector3();
+	private static spread = 0;
 
 	public static Init() {
-		UnitsMovement.circle = ReplicatedFirst.WaitForChild("MovementCircle")!.Clone() as MovementCircle;
-		UnitsMovement.arrow = UnitsMovement.circle.Arrow;
+		let endCallback: Callback | undefined;
+		Input.Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.Begin, () => {
+			const units = Selection.selectedUnits;
+			const formation = new Normal();
+			endCallback = UnitsAction.GetActionCFrame(units, formation, [2, 12], (cframe: CFrame, spread: number) => {
+				UnitsAction.MoveUnits(units, cframe, formation, spread);
+				formation.Destroy();
+			});
+		});
+
+		Input.Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.End, () => {
+			endCallback?.();
+		});
 	}
 
-	public static GetActionCFrame(formation: Formation, keycode: Enum.KeyCode): Promise {
-		UnitsMovement.Enable(true);
+	public static GetActionCFrame(
+		units: Unit[],
+		formation: Formation,
+		spreadLimits: [number, number],
+		resultCallback: (cframe: CFrame, spread: number) => void,
+	): Callback {
+		UnitsAction.units = units;
+		UnitsAction.formationSelected = formation;
+		UnitsAction.spreadLimits = spreadLimits;
+		UnitsAction.Enable(true);
 
-		return new Promise<CFrame>((resolve, d) => {});
+		const endCallback = () => {
+			resultCallback(UnitsAction.cframe, UnitsAction.spread);
+			UnitsAction.Enable(false);
+		};
+
+		return endCallback;
 	}
 
 	private static Enable(state: boolean) {
-		if (Selection.selectedUnits.size() === 0) return;
-		if (UnitsMovement.enabled === state) return;
-
-		const mouseHitResult = Utils.GetMouseHit();
-		if (!mouseHitResult) return;
-
-		UnitsMovement.regroupPosition = mouseHitResult.Position;
-		UnitsMovement.enabled = state;
+		if (UnitsAction.units.size() === 0) return;
+		if (UnitsAction.enabled === state) return;
 
 		if (state) {
-			RunService.BindToRenderStep("UnitsMovement", Enum.RenderPriority.Last.Value, () => UnitsMovement.Update());
+			const mouseHitResult = Utils.GetMouseHit();
+			if (!mouseHitResult) return;
+			UnitsAction.startPosition = mouseHitResult.Position;
+			RunService.BindToRenderStep("unitsAction", Enum.RenderPriority.Last.Value, () => UnitsAction.Update());
 		} else {
-			RunService.UnbindFromRenderStep("UnitsMovement");
+			RunService.UnbindFromRenderStep("unitsAction");
 		}
+
+		UnitsAction.enabled = state;
 	}
 
 	private static Update() {
@@ -51,66 +75,20 @@ export default abstract class UnitsMovement {
 
 		const groundedMousePosition = new Vector3(
 			mouseHitResult.Position.X,
-			UnitsMovement.regroupPosition.Y,
+			UnitsAction.startPosition.Y,
 			mouseHitResult.Position.Z,
 		);
 
-		const arrowLength = groundedMousePosition.sub(UnitsMovement.regroupPosition).Magnitude;
-		const fixedArrowLength = math.clamp(arrowLength, 2, 12);
+		const arrowLength = groundedMousePosition.sub(UnitsAction.startPosition).Magnitude;
+		const spread = math.clamp(arrowLength, UnitsAction.spreadLimits[0], UnitsAction.spreadLimits[1]);
 
-		if (arrowLength > 2) {
-			UnitsMovement.circle.PivotTo(new CFrame(UnitsMovement.regroupPosition, mouseHitResult.Position));
-		} else {
-			let medianPosition = new Vector3();
-			Selection.selectedUnits.forEach((unit) => {
-				medianPosition = medianPosition.add(unit.model.GetPivot().Position);
-			});
-			UnitsMovement.circle.PivotTo(
-				new CFrame(UnitsMovement.regroupPosition, medianPosition.div(Selection.selectedUnits.size())).mul(
-					CFrame.Angles(0, math.pi, 0),
-				),
-			);
-		}
+		UnitsAction.spread = spread;
+		UnitsAction.cframe = new CFrame(UnitsAction.startPosition, mouseHitResult.Position);
 
-		UnitsMovement.circle.Parent = camera;
-
-		const arrowMiddle = new CFrame(UnitsMovement.regroupPosition, groundedMousePosition).mul(
-			new CFrame(0, 0, -fixedArrowLength / 2),
-		).Position;
-
-		UnitsMovement.arrow.Parent = arrowLength < 2 ? undefined : UnitsMovement.circle;
-
-		UnitsMovement.arrow.PivotTo(new CFrame(arrowMiddle, UnitsMovement.regroupPosition));
-		UnitsMovement.arrow.Length.Size = new Vector3(
-			fixedArrowLength,
-			UnitsMovement.arrow.Length.Size.Y,
-			UnitsMovement.arrow.Length.Size.Z,
-		);
-
-		UnitsMovement.arrow.Length.Attachment.CFrame = new CFrame(fixedArrowLength / 2, 0, 0);
-		UnitsMovement.arrow.Left.PivotTo(UnitsMovement.arrow.Length.Attachment.WorldCFrame);
-		UnitsMovement.arrow.Right.PivotTo(UnitsMovement.arrow.Length.Attachment.WorldCFrame);
-
-		UnitsMovement.spread = fixedArrowLength;
-
-		// visualise positions
-		const mainCFrame = UnitsMovement.circle.GetPivot();
-		const cframes = UnitsMovement.formationSelected.GetCFramesInFormation(
-			Selection.selectedUnits.size(),
-			mainCFrame,
-			UnitsMovement.spread,
-		);
-
-		UnitsMovement.circle.Positions.ClearAllChildren();
-		cframes.forEach((cframe, i) => {
-			if (i === 0) return;
-			const positionPart = UnitsMovement.circle.Middle.Clone() as BasePart;
-			positionPart.PivotTo(cframe);
-			positionPart.Parent = UnitsMovement.circle.Positions;
-		});
+		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread);
 	}
 
-	public static MoveGroup(units: Array<Unit>, cframe: CFrame, formation: Formation, spread: number) {
+	public static async MoveUnits(units: Array<Unit>, cframe: CFrame, formation: Formation, spread: number) {
 		const cframes = formation.GetCFramesInFormation(units.size(), cframe, spread);
 		let distancesArray = new Array<[Unit, number, CFrame]>();
 

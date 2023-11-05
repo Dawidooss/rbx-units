@@ -1,6 +1,10 @@
 import Formation from "./Formation";
 
-export default class Line implements Formation {
+export default class Line extends Formation {
+	constructor() {
+		super("NormalAction");
+	}
+
 	GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 

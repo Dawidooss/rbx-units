@@ -1,10 +1,14 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
+local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
+local Formation = TS.import(script, script.Parent, "Formation").default
 local Line
 do
+	local super = Formation
 	Line = setmetatable({}, {
 		__tostring = function()
 			return "Line"
 		end,
+		__index = super,
 	})
 	Line.__index = Line
 	function Line.new(...)
@@ -12,6 +16,7 @@ do
 		return self:constructor(...) or self
 	end
 	function Line:constructor()
+		super.constructor(self, "NormalAction")
 	end
 	function Line:GetCFramesInFormation(size, mainCFrame, spread)
 		local cframes = {}

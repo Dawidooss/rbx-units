@@ -3,7 +3,7 @@ type UnitModel = Model & {
 	HumanoidRootPart: BasePart;
 };
 
-type MovementCircle = Model & {
+type ActionCircle = Model & {
 	Positions: Model;
 	Arrow: Model & {
 		Length: BasePart & {

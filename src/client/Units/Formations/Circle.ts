@@ -1,35 +1,34 @@
 import { ReplicatedFirst, Workspace } from "@rbxts/services";
-import UnitsAction from "../UnitsAction";
 import Unit from "../Unit";
-import Movement from "client/Movement";
+import Formation from "./Formation";
 
 const camera = Workspace.CurrentCamera!;
 
-export default abstract class Formation {
-	protected circle: ActionCircle;
-	protected arrow: ActionCircle["Arrow"];
-	protected destroyed = false;
-
-	constructor(actionType: string) {
-		this.circle = ReplicatedFirst.WaitForChild(actionType)!.Clone() as ActionCircle;
-		this.arrow = this.circle.Arrow;
+export default class Circle extends Formation {
+	constructor() {
+		super("CircularAction");
 	}
 
-	public abstract GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): Array<CFrame>;
-	public VisualisePositions(units: Unit[], cframe: CFrame, spread: number) {
+	public GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): CFrame[] {
+		const cframes = new Array<CFrame>();
+
+		for (let i = 0; i < size; i++) {
+			const row = math.floor(i / 10);
+			const rowPosition = math.pow(-1, i) * math.ceil((i - row * 10) / 2);
+
+			const offset = new CFrame(rowPosition * spread, 0, row * spread);
+			const cframe = mainCFrame.mul(offset);
+
+			cframes.push(cframe);
+		}
+
+		return cframes;
+	}
+
+	public VisualisePositions(units: Unit[], cframe: CFrame, spread: number): void {
 		if (this.destroyed) return;
 
-		if (spread > 2) {
-			this.circle.PivotTo(cframe);
-		} else {
-			let medianPosition = new Vector3();
-			units.forEach((unit) => {
-				medianPosition = medianPosition.add(unit.model.GetPivot().Position);
-			});
-
-			medianPosition = medianPosition.div(units.size());
-			this.circle.PivotTo(new CFrame(cframe.Position, medianPosition).mul(CFrame.Angles(0, math.pi, 0)));
-		}
+		this.circle.PivotTo(cframe);
 		this.circle.Parent = camera;
 		this.arrow.Parent = spread < 2 ? undefined : this.circle;
 
@@ -52,9 +51,5 @@ export default abstract class Formation {
 			positionPart.PivotTo(cframe);
 			positionPart.Parent = this.circle.Positions;
 		});
-	}
-	public Destroy() {
-		this.destroyed = true;
-		this.circle.Destroy();
 	}
 }
