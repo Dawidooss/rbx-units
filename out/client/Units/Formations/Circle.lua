@@ -36,10 +36,9 @@ do
 				end
 				local rotation = (360 / size) * i
 				local _mainCFrame = mainCFrame
-				local _arg0 = CFrame.Angles(0, math.rad(rotation), 0)
-				local _cFrame = CFrame.new(0, 0, spread)
-				local _arg0_1 = CFrame.Angles(0, math.pi, 0)
-				local cframe = _mainCFrame * _arg0 * _cFrame * _arg0_1
+				local _arg0 = CFrame.Angles(0, math.rad(rotation) + math.pi, 0)
+				local _cFrame = CFrame.new(0, 0, -spread)
+				local cframe = _mainCFrame * _arg0 * _cFrame
 				table.insert(cframes, cframe)
 			end
 		end
@@ -49,7 +48,7 @@ do
 		if self.destroyed then
 			return nil
 		end
-		self.circle:PivotTo(cframe)
+		self.circle:PivotTo(CFrame.new(cframe.Position))
 		self.circle.Parent = camera
 		self.circle.Middle.Size = Vector3.new(self.circle.Middle.Size.X, spread * 2, spread * 2)
 	end

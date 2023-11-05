@@ -63,6 +63,9 @@ do
 			_arg0(_v, _k - 1, cframes)
 		end
 	end
+	function Formation:GetSpreadLimits(unitsSize)
+		return { 2, 12 }
+	end
 	function Formation:Destroy()
 		self.destroyed = true
 		self.circle:Destroy()

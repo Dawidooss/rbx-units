@@ -84,7 +84,11 @@ export default abstract class UnitsAction {
 		const spread = math.clamp(arrowLength, UnitsAction.spreadLimits[0], UnitsAction.spreadLimits[1]);
 
 		UnitsAction.spread = spread;
-		UnitsAction.cframe = new CFrame(UnitsAction.startPosition, mouseHitResult.Position);
+		if (UnitsAction.startPosition === mouseHitResult.Position) {
+			UnitsAction.cframe = new CFrame(UnitsAction.startPosition);
+		} else {
+			UnitsAction.cframe = new CFrame(UnitsAction.startPosition, mouseHitResult.Position);
+		}
 
 		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread);
 	}
@@ -92,6 +96,9 @@ export default abstract class UnitsAction {
 	public static async MoveUnits(units: Array<Unit>, cframe: CFrame, formation: Formation, spread: number) {
 		const cframes = formation.GetCFramesInFormation(units.size(), cframe, spread);
 		let distancesArray = new Array<[Unit, number, CFrame]>();
+
+		print(cframe);
+		print(cframes);
 
 		units.forEach((unit) => {
 			cframes.forEach((cframe) => {

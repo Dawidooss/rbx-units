@@ -16,6 +16,7 @@ export default abstract class Formation {
 	}
 
 	public abstract GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): Array<CFrame>;
+
 	public VisualisePositions(units: Unit[], cframe: CFrame, spread: number) {
 		if (this.destroyed) return;
 
@@ -53,6 +54,11 @@ export default abstract class Formation {
 			positionPart.Parent = this.circle.Positions;
 		});
 	}
+
+	public GetSpreadLimits(unitsSize: number): number[] {
+		return [2, 12];
+	}
+
 	public Destroy() {
 		this.destroyed = true;
 		this.circle.Destroy();

@@ -72,12 +72,18 @@ do
 		local arrowLength = (groundedMousePosition - _startPosition).Magnitude
 		local spread = math.clamp(arrowLength, UnitsAction.spreadLimits[1], UnitsAction.spreadLimits[2])
 		UnitsAction.spread = spread
-		UnitsAction.cframe = CFrame.new(UnitsAction.startPosition, mouseHitResult.Position)
+		if UnitsAction.startPosition == mouseHitResult.Position then
+			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition)
+		else
+			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition, mouseHitResult.Position)
+		end
 		UnitsAction.formationSelected:VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread)
 	end
 	UnitsAction.MoveUnits = TS.async(function(self, units, cframe, formation, spread)
 		local cframes = formation:GetCFramesInFormation(#units, cframe, spread)
 		local distancesArray = {}
+		print(cframe)
+		print(cframes)
 		local _units = units
 		local _arg0 = function(unit)
 			local _arg0_1 = function(cframe)
