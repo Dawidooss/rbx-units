@@ -55,7 +55,7 @@ export default abstract class Formation {
 		});
 	}
 
-	public GetSpreadLimits(unitsSize: number): number[] {
+	public GetSpreadLimits(unitsSize: number): [number, number] {
 		return [2, 12];
 	}
 

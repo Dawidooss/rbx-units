@@ -24,7 +24,7 @@ export default abstract class UnitsAction {
 		Input.Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.Begin, () => {
 			const units = Selection.selectedUnits;
 			const formation = new Circle();
-			endCallback = UnitsAction.GetActionCFrame(units, formation, [2, 12], (cframe: CFrame, spread: number) => {
+			endCallback = UnitsAction.GetActionCFrame(units, formation, (cframe: CFrame, spread: number) => {
 				UnitsAction.MoveUnits(units, cframe, formation, spread);
 				formation.Destroy();
 			});
@@ -38,12 +38,11 @@ export default abstract class UnitsAction {
 	public static GetActionCFrame(
 		units: Unit[],
 		formation: Formation,
-		spreadLimits: [number, number],
 		resultCallback: (cframe: CFrame, spread: number) => void,
 	): Callback {
 		UnitsAction.units = units;
 		UnitsAction.formationSelected = formation;
-		UnitsAction.spreadLimits = spreadLimits;
+		UnitsAction.spreadLimits = formation.GetSpreadLimits(units.size());
 		UnitsAction.Enable(true);
 
 		const endCallback = () => {

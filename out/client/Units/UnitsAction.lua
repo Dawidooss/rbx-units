@@ -18,7 +18,7 @@ do
 		Input:Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.Begin, function()
 			local units = Selection.selectedUnits
 			local formation = Circle.new()
-			endCallback = UnitsAction:GetActionCFrame(units, formation, { 2, 12 }, function(cframe, spread)
+			endCallback = UnitsAction:GetActionCFrame(units, formation, function(cframe, spread)
 				UnitsAction:MoveUnits(units, cframe, formation, spread)
 				formation:Destroy()
 			end)
@@ -30,10 +30,10 @@ do
 			end
 		end)
 	end
-	function UnitsAction:GetActionCFrame(units, formation, spreadLimits, resultCallback)
+	function UnitsAction:GetActionCFrame(units, formation, resultCallback)
 		UnitsAction.units = units
 		UnitsAction.formationSelected = formation
-		UnitsAction.spreadLimits = spreadLimits
+		UnitsAction.spreadLimits = formation:GetSpreadLimits(#units)
 		UnitsAction:Enable(true)
 		local endCallback = function()
 			resultCallback(UnitsAction.cframe, UnitsAction.spread)

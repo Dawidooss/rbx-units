@@ -13,9 +13,6 @@ export default class Circle extends Formation {
 	public GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 
-		const maxUnitsPerCircle = spread;
-
-		for (let j = 0; j < math.ceil(size / maxUnitsPerCircle))
 		for (let i = 0; i < size; i++) {
 			const rotation = (360 / size) * i;
 			const cframe = mainCFrame
@@ -37,9 +34,13 @@ export default class Circle extends Formation {
 		this.circle.Middle.Size = new Vector3(this.circle.Middle.Size.X, spread * 2, spread * 2);
 	}
 
-	public GetSpreadLimits(unitsSize: number): number[] {
-		const maxSpread = 12
-		const minSpread = math.clamp(unitsSize, 4, maxSpread)
-		return [minSpread, maxSpread]
+	public GetSpreadLimits(unitsSize: number): [number, number] {
+		let positionsUsed = 5;
+		let minSpread = 4;
+		while (positionsUsed < unitsSize) {
+			minSpread += 2;
+			positionsUsed = math.floor((3 / 2) * minSpread);
+		}
+		return [minSpread, math.max(minSpread, 20)];
 	}
 }

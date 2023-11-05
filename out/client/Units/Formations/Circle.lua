@@ -52,6 +52,15 @@ do
 		self.circle.Parent = camera
 		self.circle.Middle.Size = Vector3.new(self.circle.Middle.Size.X, spread * 2, spread * 2)
 	end
+	function Circle:GetSpreadLimits(unitsSize)
+		local positionsUsed = 5
+		local minSpread = 4
+		while positionsUsed < unitsSize do
+			minSpread += 2
+			positionsUsed = math.floor((3 / 2) * minSpread)
+		end
+		return { minSpread, math.max(minSpread, 20) }
+	end
 end
 return {
 	default = Circle,
