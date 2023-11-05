@@ -1,8 +1,8 @@
 import { ContextActionService, Players, PolicyService, UserInputService, Workspace } from "@rbxts/services";
-import UnitsManager from "./UnitsManager";
+import UnitsManager from "./Units/UnitsManager";
 import guiInset from "./GuiInset";
-import Unit from "./Unit";
-import SelectionBox from "./Selection";
+import Unit from "./Units/Unit";
+import SelectionBox from "./Units/Selection";
 
 const camera = Workspace.CurrentCamera!;
 const player = Players.LocalPlayer;

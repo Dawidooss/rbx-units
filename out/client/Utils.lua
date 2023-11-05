@@ -1,10 +1,10 @@
--- Compiled with roblox-ts v2.1.1
+-- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local UserInputService = _services.UserInputService
 local Workspace = _services.Workspace
 local guiInset = TS.import(script, script.Parent, "GuiInset").default
-local UnitsManager = TS.import(script, script.Parent, "UnitsManager").default
+local UnitsManager = TS.import(script, script.Parent, "Units", "UnitsManager").default
 local camera = Workspace.CurrentCamera
 local Utils
 do

@@ -17,6 +17,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@rbxts/services": "^1.5.1"
+    "@rbxts/services": "^1.5.1",
+    "io-serve": "^1.1.2"
   }
 }

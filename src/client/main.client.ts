@@ -1,10 +1,10 @@
 import { ContextActionService, Players, RunService, UserInputService, Workspace } from "@rbxts/services";
 import Movement from "./Movement";
-import UnitsManager from "./UnitsManager";
+import UnitsManager from "./Units/UnitsManager";
 import Input from "./Input";
-import Selection from "./Selection";
+import Selection from "./Units/Selection";
 import Admin from "./Admin";
-import UnitsRegroup from "./UnitsRegroup";
+import UnitsRegroup from "./Units/UnitsMovement";
 
 Selection.Init();
 UnitsManager.Init();

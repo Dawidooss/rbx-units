@@ -1,6 +1,6 @@
 import { UserInputService, Workspace } from "@rbxts/services";
 import guiInset from "./GuiInset";
-import UnitsManager from "./UnitsManager";
+import UnitsManager from "./Units/UnitsManager";
 
 const camera = Workspace.CurrentCamera!;
 

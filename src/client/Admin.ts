@@ -1,5 +1,5 @@
 import { UserInputService, Workspace } from "@rbxts/services";
-import UnitsManager from "./UnitsManager";
+import UnitsManager from "./Units/UnitsManager";
 import Input from "./Input";
 import guiInset from "./GuiInset";
 import Utils from "./Utils";
