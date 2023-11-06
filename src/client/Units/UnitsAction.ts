@@ -86,7 +86,7 @@ export default abstract class UnitsAction {
 		if (UnitsAction.startPosition === mouseHitResult.Position) {
 			UnitsAction.cframe = new CFrame(UnitsAction.startPosition);
 		} else {
-			UnitsAction.cframe = new CFrame(UnitsAction.startPosition, mouseHitResult.Position);
+			UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMousePosition);
 		}
 
 		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread);
@@ -96,15 +96,13 @@ export default abstract class UnitsAction {
 		const cframes = formation.GetCFramesInFormation(units.size(), cframe, spread);
 		let distancesArray = new Array<[Unit, number, CFrame]>();
 
-		print(cframe);
-		print(cframes);
-
-		units.forEach((unit) => {
-			cframes.forEach((cframe) => {
-				const distance = unit.model.GetPivot().Position.sub(cframe.Position).Magnitude;
+		for (const unit of units) {
+			const pivotPosition = unit.model.GetPivot().Position;
+			for (const cframe of cframes) {
+				const distance = pivotPosition.sub(cframe.Position).Magnitude;
 				distancesArray.push([unit, distance, cframe]);
-			});
-		});
+			}
+		}
 
 		distancesArray.sort((a, b) => {
 			return a[1] < b[1];

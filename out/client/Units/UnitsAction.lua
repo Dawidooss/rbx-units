@@ -75,50 +75,41 @@ do
 		if UnitsAction.startPosition == mouseHitResult.Position then
 			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition)
 		else
-			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition, mouseHitResult.Position)
+			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition, groundedMousePosition)
 		end
 		UnitsAction.formationSelected:VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread)
 	end
 	UnitsAction.MoveUnits = TS.async(function(self, units, cframe, formation, spread)
 		local cframes = formation:GetCFramesInFormation(#units, cframe, spread)
 		local distancesArray = {}
-		print(cframe)
-		print(cframes)
-		local _units = units
-		local _arg0 = function(unit)
-			local _arg0_1 = function(cframe)
-				local _position = unit.model:GetPivot().Position
-				local _position_1 = cframe.Position
-				local distance = (_position - _position_1).Magnitude
+		for _, unit in units do
+			local pivotPosition = unit.model:GetPivot().Position
+			for _1, cframe in cframes do
+				local _position = cframe.Position
+				local distance = (pivotPosition - _position).Magnitude
 				local _distancesArray = distancesArray
-				local _arg0_2 = { unit, distance, cframe }
-				table.insert(_distancesArray, _arg0_2)
+				local _arg0 = { unit, distance, cframe }
+				table.insert(_distancesArray, _arg0)
 			end
-			for _k, _v in cframes do
-				_arg0_1(_v, _k - 1, cframes)
-			end
-		end
-		for _k, _v in _units do
-			_arg0(_v, _k - 1, _units)
 		end
 		local _distancesArray = distancesArray
-		local _arg0_1 = function(a, b)
+		local _arg0 = function(a, b)
 			return a[2] < b[2]
 		end
-		table.sort(_distancesArray, _arg0_1)
+		table.sort(_distancesArray, _arg0)
 		while #distancesArray > 0 do
 			local closest = distancesArray[1]
 			closest[1]:Move(closest[3])
 			local newDistancesArray = {}
 			local _distancesArray_1 = distancesArray
-			local _arg0_2 = function(v)
+			local _arg0_1 = function(v)
 				if v[1] ~= closest[1] and v[3] ~= closest[3] then
 					local _v = v
 					table.insert(newDistancesArray, _v)
 				end
 			end
 			for _k, _v in _distancesArray_1 do
-				_arg0_2(_v, _k - 1, _distancesArray_1)
+				_arg0_1(_v, _k - 1, _distancesArray_1)
 			end
 			distancesArray = newDistancesArray
 		end
