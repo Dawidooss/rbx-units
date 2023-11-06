@@ -15,22 +15,13 @@ export default abstract class Formation {
 		this.arrow = this.circle.Arrow;
 	}
 
-	public abstract GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): Array<CFrame>;
+	public abstract GetCFramesInFormation(unitsAmount: number, mainCFrame: CFrame, spread: number): Array<CFrame>;
 
 	public VisualisePositions(units: Unit[], cframe: CFrame, spread: number) {
 		if (this.destroyed) return;
 
-		if (spread > 2) {
-			this.circle.PivotTo(cframe);
-		} else {
-			let medianPosition = new Vector3();
-			units.forEach((unit) => {
-				medianPosition = medianPosition.add(unit.model.GetPivot().Position);
-			});
+		this.circle.PivotTo(cframe);
 
-			medianPosition = medianPosition.div(units.size());
-			this.circle.PivotTo(new CFrame(cframe.Position, medianPosition).mul(CFrame.Angles(0, math.pi, 0)));
-		}
 		this.circle.Parent = camera;
 		this.arrow.Parent = spread < 2 ? undefined : this.circle;
 
@@ -55,8 +46,12 @@ export default abstract class Formation {
 		});
 	}
 
-	public GetSpreadLimits(unitsSize: number): [number, number] {
-		return [2, 12];
+	public GetSpreadLimits(unitsAmount: number): [number, number] {
+		return [4, 12];
+	}
+
+	public Hide() {
+		this.circle.Parent = undefined;
 	}
 
 	public Destroy() {

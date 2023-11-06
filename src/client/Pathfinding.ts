@@ -4,6 +4,7 @@ import Unit from "./Units/Unit";
 const agentParams = {
 	AgentCanJump: false,
 	WaypointSpacing: math.huge,
+	AgentRadius: 2,
 };
 
 export default class Pathfinding {
@@ -53,8 +54,13 @@ export default class Pathfinding {
 
 			const currentWaypoint = this.waypoints[this.currentWaypointIndex];
 			if (!currentWaypoint) return;
-			const distanceToCurrentWaypoint = currentWaypoint.Position.sub(this.beamAttachment.WorldPosition).Magnitude;
 
+			const groundedCurrentWaypoint = new Vector3(
+				currentWaypoint.Position.X,
+				this.beamAttachment.WorldPosition.Y,
+				currentWaypoint.Position.Z,
+			);
+			const distanceToCurrentWaypoint = groundedCurrentWaypoint.sub(this.beamAttachment.WorldPosition).Magnitude;
 			if (distanceToCurrentWaypoint < 1) {
 				if (this.currentWaypointIndex === this.waypoints.size() - 1) {
 					this.Stop(true);
@@ -89,7 +95,8 @@ export default class Pathfinding {
 
 		// this.agent.MoveTo(this.agent.GetPivot().Position);
 		if (success) {
-			this.unit.alignOrientation.CFrame = this.targetCFrame;
+			const orientation = this.targetCFrame.ToOrientation();
+			this.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[1], 0);
 		}
 
 		this.active = false;
@@ -139,7 +146,8 @@ export default class Pathfinding {
 			return;
 		}
 
-		this.unit.alignOrientation.CFrame = new CFrame(this.agent.GetPivot().Position, waypoint.Position);
+		const orientation = new CFrame(this.agent.GetPivot().Position, waypoint.Position).ToOrientation();
+		this.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[1], 0);
 		this.agent.Humanoid.MoveTo(waypoint.Position);
 	}
 
@@ -150,9 +158,15 @@ export default class Pathfinding {
 
 		const currentWaypoint = this.waypoints[this.currentWaypointIndex];
 		if (!currentWaypoint) return;
-		const distanceToCurrentWaypoint = currentWaypoint.Position.sub(this.beamAttachment.WorldPosition).Magnitude;
+		const groundedCurrentWaypoint = new Vector3(
+			currentWaypoint.Position.X,
+			this.beamAttachment.WorldPosition.Y,
+			currentWaypoint.Position.Z,
+		);
+		const distanceToCurrentWaypoint = groundedCurrentWaypoint.sub(this.beamAttachment.WorldPosition).Magnitude;
 
 		if (distanceToCurrentWaypoint > 1 && this.agent.Humanoid.GetState() !== Enum.HumanoidStateType.Running) {
+			print(distanceToCurrentWaypoint);
 			this.moveToCurrentWaypointTries += 1;
 			this.MoveToCurrentWaypoint();
 		}

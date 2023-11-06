@@ -5,16 +5,16 @@ import Utils from "client/Utils";
 
 const camera = Workspace.CurrentCamera!;
 
-export default class Circle extends Formation {
+export default class CircleFormation extends Formation {
 	constructor() {
 		super("CircularAction");
 	}
 
-	public GetCFramesInFormation(size: number, mainCFrame: CFrame, spread: number): CFrame[] {
+	public GetCFramesInFormation(unitsAmount: number, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 
-		for (let i = 0; i < size; i++) {
-			const rotation = (360 / size) * i;
+		for (let i = 0; i < unitsAmount; i++) {
+			const rotation = (360 / unitsAmount) * i;
 			const cframe = mainCFrame
 				.mul(CFrame.Angles(0, math.rad(rotation) + math.pi, 0))
 				.mul(new CFrame(0, 0, -spread));
@@ -34,10 +34,10 @@ export default class Circle extends Formation {
 		this.circle.Middle.Size = new Vector3(this.circle.Middle.Size.X, spread * 2, spread * 2);
 	}
 
-	public GetSpreadLimits(unitsSize: number): [number, number] {
+	public GetSpreadLimits(unitsAmount: number): [number, number] {
 		let positionsUsed = 5;
 		let minSpread = 4;
-		while (positionsUsed < unitsSize) {
+		while (positionsUsed < unitsAmount) {
 			minSpread += 2;
 			positionsUsed = math.floor((3 / 2) * minSpread);
 		}

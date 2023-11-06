@@ -7,6 +7,10 @@ local Input = TS.import(script, script.Parent, "Input").default
 local Selection = TS.import(script, script.Parent, "Units", "Selection").default
 local Admin = TS.import(script, script.Parent, "Admin").default
 local UnitsAction = TS.import(script, script.Parent, "Units", "UnitsAction").default
+local HUDHandler = TS.import(script, script.Parent, "Units", "HUDHandler").default
+local HUD = TS.import(script, script.Parent, "Units", "HUD").default
+HUD:Init()
+HUDHandler:Init()
 Selection:Init()
 UnitsManager:Init()
 Movement:Init()

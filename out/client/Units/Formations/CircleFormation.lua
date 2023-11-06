@@ -3,24 +3,24 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local Formation = TS.import(script, script.Parent, "Formation").default
 local camera = Workspace.CurrentCamera
-local Circle
+local CircleFormation
 do
 	local super = Formation
-	Circle = setmetatable({}, {
+	CircleFormation = setmetatable({}, {
 		__tostring = function()
-			return "Circle"
+			return "CircleFormation"
 		end,
 		__index = super,
 	})
-	Circle.__index = Circle
-	function Circle.new(...)
-		local self = setmetatable({}, Circle)
+	CircleFormation.__index = CircleFormation
+	function CircleFormation.new(...)
+		local self = setmetatable({}, CircleFormation)
 		return self:constructor(...) or self
 	end
-	function Circle:constructor()
+	function CircleFormation:constructor()
 		super.constructor(self, "CircularAction")
 	end
-	function Circle:GetCFramesInFormation(size, mainCFrame, spread)
+	function CircleFormation:GetCFramesInFormation(unitsAmount, mainCFrame, spread)
 		local cframes = {}
 		do
 			local i = 0
@@ -31,10 +31,10 @@ do
 				else
 					_shouldIncrement = true
 				end
-				if not (i < size) then
+				if not (i < unitsAmount) then
 					break
 				end
-				local rotation = (360 / size) * i
+				local rotation = (360 / unitsAmount) * i
 				local _mainCFrame = mainCFrame
 				local _arg0 = CFrame.Angles(0, math.rad(rotation) + math.pi, 0)
 				local _cFrame = CFrame.new(0, 0, -spread)
@@ -44,7 +44,7 @@ do
 		end
 		return cframes
 	end
-	function Circle:VisualisePositions(units, cframe, spread)
+	function CircleFormation:VisualisePositions(units, cframe, spread)
 		if self.destroyed then
 			return nil
 		end
@@ -52,10 +52,10 @@ do
 		self.circle.Parent = camera
 		self.circle.Middle.Size = Vector3.new(self.circle.Middle.Size.X, spread * 2, spread * 2)
 	end
-	function Circle:GetSpreadLimits(unitsSize)
+	function CircleFormation:GetSpreadLimits(unitsAmount)
 		local positionsUsed = 5
 		local minSpread = 4
-		while positionsUsed < unitsSize do
+		while positionsUsed < unitsAmount do
 			minSpread += 2
 			positionsUsed = math.floor((3 / 2) * minSpread)
 		end
@@ -63,5 +63,5 @@ do
 	end
 end
 return {
-	default = Circle,
+	default = CircleFormation,
 }

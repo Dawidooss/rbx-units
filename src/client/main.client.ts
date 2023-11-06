@@ -5,7 +5,11 @@ import Input from "./Input";
 import Selection from "./Units/Selection";
 import Admin from "./Admin";
 import UnitsAction from "./Units/UnitsAction";
+import HUDHandler from "./Units/HUDHandler";
+import HUD from "./Units/HUD";
 
+HUD.Init();
+HUDHandler.Init();
 Selection.Init();
 UnitsManager.Init();
 Movement.Init();

@@ -3,6 +3,7 @@ import guiInset from "../GuiInset";
 import Unit, { UnitSelectionType } from "./Unit";
 import UnitsManager from "./UnitsManager";
 import Input from "../Input";
+import HUD from "./HUD";
 
 const player = Players.LocalPlayer;
 const playerGui = player.WaitForChild("PlayerGui") as PlayerGui;
@@ -15,7 +16,6 @@ enum SelectionType {
 }
 
 export default abstract class Selection {
-	private static gui: GuiObject;
 	private static selectionType = SelectionType.None;
 	private static boxCornerPosition = new Vector2();
 	public static boxSize = new Vector2();
@@ -25,8 +25,6 @@ export default abstract class Selection {
 	public static selectedUnits = new Array<Unit>();
 
 	public static Init() {
-		Selection.gui = playerGui.WaitForChild("HUD").WaitForChild("SelectionBox") as GuiObject;
-
 		// handle if LMB pressed and relesed
 		ContextActionService.BindAction(
 			"selection",
@@ -70,10 +68,14 @@ export default abstract class Selection {
 				const screenPosition = camera.WorldToScreenPoint(pivot.Position)[0];
 
 				if (
-					screenPosition.X >= Selection.gui.Position.X.Offset - math.abs(Selection.gui.Size.X.Offset / 2) &&
-					screenPosition.X <= Selection.gui.Position.X.Offset + math.abs(Selection.gui.Size.X.Offset / 2) &&
-					screenPosition.Y >= Selection.gui.Position.Y.Offset - math.abs(Selection.gui.Size.Y.Offset / 2) &&
-					screenPosition.Y <= Selection.gui.Position.Y.Offset + math.abs(Selection.gui.Size.Y.Offset / 2)
+					screenPosition.X >=
+						HUD.gui.SelectionBox.Position.X.Offset - math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) &&
+					screenPosition.X <=
+						HUD.gui.SelectionBox.Position.X.Offset + math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) &&
+					screenPosition.Y >=
+						HUD.gui.SelectionBox.Position.Y.Offset - math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2) &&
+					screenPosition.Y <=
+						HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2)
 				) {
 					units.push(unit);
 				}
@@ -103,17 +105,17 @@ export default abstract class Selection {
 
 		// define if curently is box selecting or selecting single unit by just hovering
 		Selection.selectionType = boxSize.Magnitude > 3 && Selection.holding ? SelectionType.Box : SelectionType.Single;
-		Selection.gui.Visible = Selection.selectionType === SelectionType.Box && Selection.holding;
+		HUD.gui.SelectionBox.Visible = Selection.selectionType === SelectionType.Box && Selection.holding;
 
 		// update selectionBox ui wether
 		if (Selection.selectionType === SelectionType.Box) {
 			Selection.selectionType = boxSize.Magnitude > 3 ? SelectionType.Box : SelectionType.Single;
 			Selection.boxSize = boxSize;
 
-			Selection.gui.Size = UDim2.fromOffset(boxSize.X, boxSize.Y);
-			Selection.gui.Position = UDim2.fromOffset(middle.X, middle.Y);
+			HUD.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y);
+			HUD.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y);
 		}
-		Selection.gui.Visible = Selection.selectionType === SelectionType.Box;
+		HUD.gui.SelectionBox.Visible = Selection.selectionType === SelectionType.Box;
 
 		// unhover old units
 		Selection.hoveringUnits.forEach((unit) => {

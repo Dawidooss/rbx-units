@@ -6,7 +6,7 @@ local Workspace = _services.Workspace
 local Utils = TS.import(script, script.Parent.Parent, "Utils").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
 local Selection = TS.import(script, script.Parent, "Selection").default
-local Circle = TS.import(script, script.Parent, "Formations", "Circle").default
+local LineFormation = TS.import(script, script.Parent, "Formations", "LineFormation").default
 local camera = Workspace.CurrentCamera
 local UnitsAction
 do
@@ -17,10 +17,8 @@ do
 		local endCallback
 		Input:Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.Begin, function()
 			local units = Selection.selectedUnits
-			local formation = Circle.new()
-			endCallback = UnitsAction:GetActionCFrame(units, formation, function(cframe, spread)
-				UnitsAction:MoveUnits(units, cframe, formation, spread)
-				formation:Destroy()
+			endCallback = UnitsAction:GetActionCFrame(units, function(cframe, spread)
+				UnitsAction:MoveUnits(units, cframe, spread)
 			end)
 		end)
 		Input:Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.End, function()
@@ -30,10 +28,14 @@ do
 			end
 		end)
 	end
-	function UnitsAction:GetActionCFrame(units, formation, resultCallback)
+	function UnitsAction:SetFormation(formation)
+		local oldFormation = self.formationSelected
+		self.formationSelected = formation
+		oldFormation:Destroy()
+	end
+	function UnitsAction:GetActionCFrame(units, resultCallback)
 		UnitsAction.units = units
-		UnitsAction.formationSelected = formation
-		UnitsAction.spreadLimits = formation:GetSpreadLimits(#units)
+		UnitsAction.spreadLimits = UnitsAction.formationSelected:GetSpreadLimits(#units)
 		UnitsAction:Enable(true)
 		local endCallback = function()
 			resultCallback(UnitsAction.cframe, UnitsAction.spread)
@@ -73,14 +75,30 @@ do
 		local spread = math.clamp(arrowLength, UnitsAction.spreadLimits[1], UnitsAction.spreadLimits[2])
 		UnitsAction.spread = spread
 		if UnitsAction.startPosition == mouseHitResult.Position then
-			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition)
+			local medianPosition = Vector3.new()
+			local _units = UnitsAction.units
+			local _arg0 = function(unit)
+				local _medianPosition = medianPosition
+				local _position = unit.model:GetPivot().Position
+				medianPosition = _medianPosition + _position
+			end
+			for _k, _v in _units do
+				_arg0(_v, _k - 1, _units)
+			end
+			local _medianPosition = medianPosition
+			local _arg0_1 = #UnitsAction.units
+			medianPosition = _medianPosition / _arg0_1
+			local groundedMedianPosition = Vector3.new(medianPosition.X, UnitsAction.startPosition.Y, medianPosition.Z)
+			local _cFrame = CFrame.new(UnitsAction.startPosition, groundedMedianPosition)
+			local _arg0_2 = CFrame.Angles(0, math.pi, 0)
+			UnitsAction.cframe = _cFrame * _arg0_2
 		else
 			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition, groundedMousePosition)
 		end
 		UnitsAction.formationSelected:VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread)
 	end
-	UnitsAction.MoveUnits = TS.async(function(self, units, cframe, formation, spread)
-		local cframes = formation:GetCFramesInFormation(#units, cframe, spread)
+	UnitsAction.MoveUnits = TS.async(function(self, units, cframe, spread)
+		local cframes = UnitsAction.formationSelected:GetCFramesInFormation(#units, cframe, spread)
 		local distancesArray = {}
 		for _, unit in units do
 			local pivotPosition = unit.model:GetPivot().Position
@@ -113,8 +131,10 @@ do
 			end
 			distancesArray = newDistancesArray
 		end
+		UnitsAction.formationSelected:Hide()
 	end)
 	UnitsAction.enabled = false
+	UnitsAction.formationSelected = LineFormation.new()
 	UnitsAction.cframe = CFrame.new()
 	UnitsAction.startPosition = Vector3.new()
 	UnitsAction.spread = 0

@@ -23,19 +23,19 @@ export default class Unit {
 		this.model.PivotTo(new CFrame(position));
 
 		// disabling not used humanoid states to save memory
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.FallingDown, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.GettingUp, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Jumping, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Swimming, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Freefall, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Flying, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Landed, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Running, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Climbing, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Seated, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false);
-		this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Dead, false); // Enable this in case you want to use .Died event
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.FallingDown, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.GettingUp, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Jumping, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Swimming, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Freefall, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Flying, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Landed, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Running, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Climbing, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Seated, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false);
+		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Dead, false); // Enable this in case you want to use .Died event
 
 		this.groundAttachment = new Instance("Attachment");
 		this.groundAttachment.Parent = this.model.HumanoidRootPart;

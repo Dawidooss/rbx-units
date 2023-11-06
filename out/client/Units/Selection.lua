@@ -10,6 +10,7 @@ local guiInset = TS.import(script, script.Parent.Parent, "GuiInset").default
 local UnitSelectionType = TS.import(script, script.Parent, "Unit").UnitSelectionType
 local UnitsManager = TS.import(script, script.Parent, "UnitsManager").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
+local HUD = TS.import(script, script.Parent, "HUD").default
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
@@ -32,7 +33,6 @@ do
 	function Selection:constructor()
 	end
 	function Selection:Init()
-		Selection.gui = playerGui:WaitForChild("HUD"):WaitForChild("SelectionBox")
 		-- handle if LMB pressed and relesed
 		ContextActionService:BindAction("selection", function(actionName, state, input)
 			return Selection:SetHolding(state == Enum.UserInputState.Begin)
@@ -68,7 +68,7 @@ do
 			local _arg0 = function(unit)
 				local pivot = unit.model:GetPivot()
 				local screenPosition = (camera:WorldToScreenPoint(pivot.Position))
-				if screenPosition.X >= Selection.gui.Position.X.Offset - math.abs(Selection.gui.Size.X.Offset / 2) and (screenPosition.X <= Selection.gui.Position.X.Offset + math.abs(Selection.gui.Size.X.Offset / 2) and (screenPosition.Y >= Selection.gui.Position.Y.Offset - math.abs(Selection.gui.Size.Y.Offset / 2) and screenPosition.Y <= Selection.gui.Position.Y.Offset + math.abs(Selection.gui.Size.Y.Offset / 2))) then
+				if screenPosition.X >= HUD.gui.SelectionBox.Position.X.Offset - math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.X <= HUD.gui.SelectionBox.Position.X.Offset + math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.Y >= HUD.gui.SelectionBox.Position.Y.Offset - math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2) and screenPosition.Y <= HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2))) then
 					local _unit = unit
 					table.insert(units, _unit)
 				end
@@ -111,15 +111,15 @@ do
 		local middle = _boxCornerPosition - _arg0
 		-- define if curently is box selecting or selecting single unit by just hovering
 		Selection.selectionType = if boxSize.Magnitude > 3 and Selection.holding then SelectionType.Box else SelectionType.Single
-		Selection.gui.Visible = Selection.selectionType == SelectionType.Box and Selection.holding
+		HUD.gui.SelectionBox.Visible = Selection.selectionType == SelectionType.Box and Selection.holding
 		-- update selectionBox ui wether
 		if Selection.selectionType == SelectionType.Box then
 			Selection.selectionType = if boxSize.Magnitude > 3 then SelectionType.Box else SelectionType.Single
 			Selection.boxSize = boxSize
-			Selection.gui.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
-			Selection.gui.Position = UDim2.fromOffset(middle.X, middle.Y)
+			HUD.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
+			HUD.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y)
 		end
-		Selection.gui.Visible = Selection.selectionType == SelectionType.Box
+		HUD.gui.SelectionBox.Visible = Selection.selectionType == SelectionType.Box
 		-- unhover old units
 		local _hoveringUnits = Selection.hoveringUnits
 		local _arg0_1 = function(unit)

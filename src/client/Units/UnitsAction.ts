@@ -4,8 +4,8 @@ import Unit from "./Unit";
 import Formation from "./Formations/Formation";
 import Input from "client/Input";
 import Selection from "./Selection";
-import Normal from "./Formations/Normal";
-import Circle from "./Formations/Circle";
+import CircleFormation from "./Formations/CircleFormation";
+import LineFormation from "./Formations/LineFormation";
 
 const camera = Workspace.CurrentCamera!;
 
@@ -13,7 +13,7 @@ export default abstract class UnitsAction {
 	public static enabled = false;
 
 	private static units: Unit[];
-	private static formationSelected: Formation;
+	private static formationSelected = new LineFormation();
 	private static spreadLimits: [number, number];
 	private static cframe = new CFrame();
 	private static startPosition = new Vector3();
@@ -23,10 +23,9 @@ export default abstract class UnitsAction {
 		let endCallback: Callback | undefined;
 		Input.Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.Begin, () => {
 			const units = Selection.selectedUnits;
-			const formation = new Circle();
-			endCallback = UnitsAction.GetActionCFrame(units, formation, (cframe: CFrame, spread: number) => {
-				UnitsAction.MoveUnits(units, cframe, formation, spread);
-				formation.Destroy();
+
+			endCallback = UnitsAction.GetActionCFrame(units, (cframe: CFrame, spread: number) => {
+				UnitsAction.MoveUnits(units, cframe, spread);
 			});
 		});
 
@@ -35,14 +34,16 @@ export default abstract class UnitsAction {
 		});
 	}
 
-	public static GetActionCFrame(
-		units: Unit[],
-		formation: Formation,
-		resultCallback: (cframe: CFrame, spread: number) => void,
-	): Callback {
+	public static SetFormation(formation: Formation) {
+		const oldFormation = this.formationSelected;
+		this.formationSelected = formation;
+
+		oldFormation.Destroy();
+	}
+
+	public static GetActionCFrame(units: Unit[], resultCallback: (cframe: CFrame, spread: number) => void): Callback {
 		UnitsAction.units = units;
-		UnitsAction.formationSelected = formation;
-		UnitsAction.spreadLimits = formation.GetSpreadLimits(units.size());
+		UnitsAction.spreadLimits = UnitsAction.formationSelected.GetSpreadLimits(units.size());
 		UnitsAction.Enable(true);
 
 		const endCallback = () => {
@@ -84,7 +85,16 @@ export default abstract class UnitsAction {
 
 		UnitsAction.spread = spread;
 		if (UnitsAction.startPosition === mouseHitResult.Position) {
-			UnitsAction.cframe = new CFrame(UnitsAction.startPosition);
+			let medianPosition = new Vector3();
+			UnitsAction.units.forEach((unit) => {
+				medianPosition = medianPosition.add(unit.model.GetPivot().Position);
+			});
+			medianPosition = medianPosition.div(UnitsAction.units.size());
+
+			const groundedMedianPosition = new Vector3(medianPosition.X, UnitsAction.startPosition.Y, medianPosition.Z);
+			UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMedianPosition).mul(
+				CFrame.Angles(0, math.pi, 0),
+			);
 		} else {
 			UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMousePosition);
 		}
@@ -92,8 +102,8 @@ export default abstract class UnitsAction {
 		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread);
 	}
 
-	public static async MoveUnits(units: Array<Unit>, cframe: CFrame, formation: Formation, spread: number) {
-		const cframes = formation.GetCFramesInFormation(units.size(), cframe, spread);
+	public static async MoveUnits(units: Array<Unit>, cframe: CFrame, spread: number) {
+		const cframes = UnitsAction.formationSelected.GetCFramesInFormation(units.size(), cframe, spread);
 		let distancesArray = new Array<[Unit, number, CFrame]>();
 
 		for (const unit of units) {
@@ -120,5 +130,7 @@ export default abstract class UnitsAction {
 			});
 			distancesArray = newDistancesArray;
 		}
+
+		UnitsAction.formationSelected.Hide();
 	}
 }

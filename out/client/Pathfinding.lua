@@ -8,6 +8,7 @@ local RunService = _services.RunService
 local agentParams = {
 	AgentCanJump = false,
 	WaypointSpacing = math.huge,
+	AgentRadius = 2,
 }
 local Pathfinding
 do
@@ -55,9 +56,9 @@ do
 			if not currentWaypoint then
 				return nil
 			end
-			local _position = currentWaypoint.Position
+			local groundedCurrentWaypoint = Vector3.new(currentWaypoint.Position.X, self.beamAttachment.WorldPosition.Y, currentWaypoint.Position.Z)
 			local _worldPosition = self.beamAttachment.WorldPosition
-			local distanceToCurrentWaypoint = (_position - _worldPosition).Magnitude
+			local distanceToCurrentWaypoint = (groundedCurrentWaypoint - _worldPosition).Magnitude
 			if distanceToCurrentWaypoint < 1 then
 				if self.currentWaypointIndex == #self.waypoints - 1 then
 					self:Stop(true)
@@ -92,7 +93,8 @@ do
 		end
 		-- this.agent.MoveTo(this.agent.GetPivot().Position);
 		if success then
-			self.unit.alignOrientation.CFrame = self.targetCFrame
+			local orientation = { self.targetCFrame:ToOrientation() }
+			self.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[2], 0)
 		end
 		self.active = false
 		self.waypoints = {}
@@ -131,7 +133,8 @@ do
 			self:Stop(true)
 			return nil
 		end
-		self.unit.alignOrientation.CFrame = CFrame.new(self.agent:GetPivot().Position, waypoint.Position)
+		local orientation = { CFrame.new(self.agent:GetPivot().Position, waypoint.Position):ToOrientation() }
+		self.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[2], 0)
 		self.agent.Humanoid:MoveTo(waypoint.Position)
 	end
 	function Pathfinding:Update()
@@ -142,10 +145,11 @@ do
 		if not currentWaypoint then
 			return nil
 		end
-		local _position = currentWaypoint.Position
+		local groundedCurrentWaypoint = Vector3.new(currentWaypoint.Position.X, self.beamAttachment.WorldPosition.Y, currentWaypoint.Position.Z)
 		local _worldPosition = self.beamAttachment.WorldPosition
-		local distanceToCurrentWaypoint = (_position - _worldPosition).Magnitude
+		local distanceToCurrentWaypoint = (groundedCurrentWaypoint - _worldPosition).Magnitude
 		if distanceToCurrentWaypoint > 1 and self.agent.Humanoid:GetState() ~= Enum.HumanoidStateType.Running then
+			print(distanceToCurrentWaypoint)
 			self.moveToCurrentWaypointTries += 1
 			self:MoveToCurrentWaypoint()
 		end

@@ -16,27 +16,7 @@ do
 		if self.destroyed then
 			return nil
 		end
-		if spread > 2 then
-			self.circle:PivotTo(cframe)
-		else
-			local medianPosition = Vector3.new()
-			local _units = units
-			local _arg0 = function(unit)
-				local _medianPosition = medianPosition
-				local _position = unit.model:GetPivot().Position
-				medianPosition = _medianPosition + _position
-			end
-			for _k, _v in _units do
-				_arg0(_v, _k - 1, _units)
-			end
-			local _medianPosition = medianPosition
-			local _arg0_1 = #units
-			medianPosition = _medianPosition / _arg0_1
-			local _fn = self.circle
-			local _cFrame = CFrame.new(cframe.Position, medianPosition)
-			local _arg0_2 = CFrame.Angles(0, math.pi, 0)
-			_fn:PivotTo(_cFrame * _arg0_2)
-		end
+		self.circle:PivotTo(cframe)
 		self.circle.Parent = camera
 		self.arrow.Parent = if spread < 2 then nil else self.circle
 		local _cframe = cframe
@@ -63,8 +43,11 @@ do
 			_arg0(_v, _k - 1, cframes)
 		end
 	end
-	function Formation:GetSpreadLimits(unitsSize)
-		return { 2, 12 }
+	function Formation:GetSpreadLimits(unitsAmount)
+		return { 4, 12 }
+	end
+	function Formation:Hide()
+		self.circle.Parent = nil
 	end
 	function Formation:Destroy()
 		self.destroyed = true
