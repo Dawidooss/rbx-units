@@ -192,6 +192,7 @@ export default class Pathfinding {
 			visualisationPart.Beam.Attachment1 = previousVisualisationAtt;
 			visualisationPart.Beam.TextureLength = toTargetCFrameDistance;
 			visualisationPart.Name = `${this.pathId}#${waypointIndex}`;
+			visualisationPart.Transparency = waypointIndex === this.waypoints.size() - 1 ? 0 : 1;
 			visualisationPart.Parent = this.visualisation.Positions;
 
 			previousVisualisationAtt = visualisationPart.Attachment;

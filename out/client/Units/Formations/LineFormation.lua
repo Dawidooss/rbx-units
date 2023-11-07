@@ -18,7 +18,7 @@ do
 	function LineFormation:constructor()
 		super.constructor(self, "NormalAction")
 	end
-	function LineFormation:GetCFramesInFormation(unitsAmount, mainCFrame, spread)
+	function LineFormation:GetCFramesInFormation(amountOfUnits, mainCFrame, spread)
 		local cframes = {}
 		local unitsPerRow = 15
 		do
@@ -30,7 +30,7 @@ do
 				else
 					_shouldIncrement = true
 				end
-				if not (i < unitsAmount) then
+				if not (i < amountOfUnits) then
 					break
 				end
 				local row = math.floor(i / unitsPerRow)

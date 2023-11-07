@@ -21,4 +21,5 @@ type HUDGui = ScreenGui & {
 	SelectionBox: Frame & {
 		UIStroke: UIStroke;
 	};
+	FormGroup: TextButton;
 };

@@ -18,9 +18,9 @@ do
 	function SquareFormation:constructor()
 		super.constructor(self, "NormalAction")
 	end
-	function SquareFormation:GetCFramesInFormation(unitsAmount, mainCFrame, spread)
+	function SquareFormation:GetCFramesInFormation(amountOfUnits, mainCFrame, spread)
 		local cframes = {}
-		local unitsPerRow = math.ceil(math.sqrt(unitsAmount))
+		local unitsPerRow = math.ceil(math.sqrt(amountOfUnits))
 		do
 			local i = 0
 			local _shouldIncrement = false
@@ -30,7 +30,7 @@ do
 				else
 					_shouldIncrement = true
 				end
-				if not (i < unitsAmount) then
+				if not (i < amountOfUnits) then
 					break
 				end
 				local row = math.floor(i / unitsPerRow)

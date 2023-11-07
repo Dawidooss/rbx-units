@@ -20,7 +20,7 @@ do
 	function CircleFormation:constructor()
 		super.constructor(self, "CircularAction")
 	end
-	function CircleFormation:GetCFramesInFormation(unitsAmount, mainCFrame, spread)
+	function CircleFormation:GetCFramesInFormation(amountOfUnits, mainCFrame, spread)
 		local cframes = {}
 		do
 			local i = 0
@@ -31,10 +31,10 @@ do
 				else
 					_shouldIncrement = true
 				end
-				if not (i < unitsAmount) then
+				if not (i < amountOfUnits) then
 					break
 				end
-				local rotation = (360 / unitsAmount) * i
+				local rotation = (360 / amountOfUnits) * i
 				local _mainCFrame = mainCFrame
 				local _arg0 = CFrame.Angles(0, math.rad(rotation) + math.pi, 0)
 				local _cFrame = CFrame.new(0, 0, -spread)
@@ -44,7 +44,7 @@ do
 		end
 		return cframes
 	end
-	function CircleFormation:VisualisePositions(units, cframe, spread)
+	function CircleFormation:VisualisePositions(amountOfUnits, cframe, spread)
 		if self.destroyed then
 			return nil
 		end
@@ -52,10 +52,10 @@ do
 		self.circle.Parent = camera
 		self.circle.Middle.Size = Vector3.new(self.circle.Middle.Size.X, spread * 2, spread * 2)
 	end
-	function CircleFormation:GetSpreadLimits(unitsAmount)
+	function CircleFormation:GetSpreadLimits(amountOfUnits)
 		local positionsUsed = 5
 		local minSpread = 4
-		while positionsUsed < unitsAmount do
+		while positionsUsed < amountOfUnits do
 			minSpread += 2
 			positionsUsed = math.floor((3 / 2) * minSpread)
 		end

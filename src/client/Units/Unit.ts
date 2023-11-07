@@ -1,20 +1,24 @@
 import { PathfindingService, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
 import Pathfinding from "client/Pathfinding";
+import Selectable, { SelectionCirle, SelectionType } from "./Selectable";
+import UnitsGroup from "./UnitsGroup";
 
-export default class Unit {
+export default class Unit extends Selectable {
 	public id: string;
 	public unitName: string;
 	public model: UnitModel;
-	public selectionType = UnitSelectionType.None;
 	public pathfinding: Pathfinding;
 	public alignOrientation: AlignOrientation;
 	public groundAttachment: Attachment;
+	public group: UnitsGroup | undefined;
 
+	public selectionType = SelectionType.None;
 	public selectionRadius = 1.5;
-
 	private selectionCircle: SelectionCirle;
 
 	constructor(id: string, unitName: string, position: Vector3) {
+		super();
+
 		this.id = id;
 		this.unitName = unitName;
 
@@ -62,15 +66,15 @@ export default class Unit {
 		weld.Part0 = this.selectionCircle;
 		weld.Part1 = this.model.HumanoidRootPart;
 
-		this.Select(UnitSelectionType.None);
+		this.Select(SelectionType.None);
 	}
 
-	public Select(selectionType: UnitSelectionType) {
+	public Select(selectionType: SelectionType) {
 		this.selectionType = selectionType;
 
-		this.pathfinding.EnableVisualisation(selectionType === UnitSelectionType.Selected);
+		this.pathfinding.EnableVisualisation(selectionType === SelectionType.Selected);
 		this.Update();
-		if (selectionType === UnitSelectionType.Selected) {
+		if (selectionType === SelectionType.Selected) {
 			RunService.BindToRenderStep(`unit-${this.id}-selectionUpdate`, 1, () => this.Update());
 		} else {
 			RunService.UnbindFromRenderStep(`unit-${this.id}-selectionUpdate`);
@@ -82,27 +86,16 @@ export default class Unit {
 		this.Update();
 	}
 
-	public Update() {
-		const selected = this.selectionType === UnitSelectionType.Selected;
+	public GetPosition(): Vector3 {
+		return this.model.GetPivot().Position;
+	}
 
-		this.selectionCircle.Transparency = this.selectionType === UnitSelectionType.None ? 1 : 0.2;
+	private Update() {
+		const selected = this.selectionType === SelectionType.Selected;
+
+		this.selectionCircle.Transparency = this.selectionType === SelectionType.None ? 1 : 0.2;
 		this.selectionCircle.Color = selected ? Color3.fromRGB(143, 142, 145) : Color3.fromRGB(70,70,70); //prettier-ignore
 	}
 
 	public Destroy() {}
 }
-
-export class UnitData {
-	constructor() {}
-}
-
-export enum UnitSelectionType {
-	Selected,
-	Hovering,
-	None,
-}
-
-type SelectionCirle = BasePart & {
-	Highlight: Highlight;
-	Attachment: Attachment;
-};

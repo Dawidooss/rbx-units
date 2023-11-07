@@ -35,7 +35,14 @@ do
 	end
 	function UnitsAction:GetActionCFrame(units, resultCallback)
 		UnitsAction.units = units
-		UnitsAction.spreadLimits = UnitsAction.formationSelected:GetSpreadLimits(#units)
+		local _fn = UnitsAction.formationSelected
+		-- ▼ ReadonlySet.size ▼
+		local _size = 0
+		for _ in units do
+			_size += 1
+		end
+		-- ▲ ReadonlySet.size ▲
+		UnitsAction.spreadLimits = _fn:GetSpreadLimits(_size)
 		UnitsAction:Enable(true)
 		local endCallback = function()
 			resultCallback(UnitsAction.cframe, UnitsAction.spread)
@@ -44,7 +51,13 @@ do
 		return endCallback
 	end
 	function UnitsAction:Enable(state)
-		if #UnitsAction.units == 0 then
+		-- ▼ ReadonlySet.size ▼
+		local _size = 0
+		for _ in UnitsAction.units do
+			_size += 1
+		end
+		-- ▲ ReadonlySet.size ▲
+		if _size == 0 then
 			return nil
 		end
 		if UnitsAction.enabled == state then
@@ -82,27 +95,46 @@ do
 				local _position = unit.model:GetPivot().Position
 				medianPosition = _medianPosition + _position
 			end
-			for _k, _v in _units do
-				_arg0(_v, _k - 1, _units)
+			for _v in _units do
+				_arg0(_v, _v, _units)
 			end
 			local _medianPosition = medianPosition
-			local _arg0_1 = #UnitsAction.units
-			medianPosition = _medianPosition / _arg0_1
+			-- ▼ ReadonlySet.size ▼
+			local _size = 0
+			for _ in UnitsAction.units do
+				_size += 1
+			end
+			-- ▲ ReadonlySet.size ▲
+			medianPosition = _medianPosition / _size
 			local groundedMedianPosition = Vector3.new(medianPosition.X, UnitsAction.startPosition.Y, medianPosition.Z)
 			local _cFrame = CFrame.new(UnitsAction.startPosition, groundedMedianPosition)
-			local _arg0_2 = CFrame.Angles(0, math.pi, 0)
-			UnitsAction.cframe = _cFrame * _arg0_2
+			local _arg0_1 = CFrame.Angles(0, math.pi, 0)
+			UnitsAction.cframe = _cFrame * _arg0_1
 		else
 			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition, groundedMousePosition)
 		end
-		UnitsAction.formationSelected:VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread)
+		local _fn = UnitsAction.formationSelected
+		-- ▼ ReadonlySet.size ▼
+		local _size = 0
+		for _ in UnitsAction.units do
+			_size += 1
+		end
+		-- ▲ ReadonlySet.size ▲
+		_fn:VisualisePositions(_size, UnitsAction.cframe, spread)
 	end
 	UnitsAction.MoveUnits = TS.async(function(self, units, cframe, spread)
-		local cframes = UnitsAction.formationSelected:GetCFramesInFormation(#units, cframe, spread)
+		local _fn = UnitsAction.formationSelected
+		-- ▼ ReadonlySet.size ▼
+		local _size = 0
+		for _ in units do
+			_size += 1
+		end
+		-- ▲ ReadonlySet.size ▲
+		local cframes = _fn:GetCFramesInFormation(_size, cframe, spread)
 		local distancesArray = {}
-		for _, unit in units do
+		for unit in units do
 			local pivotPosition = unit.model:GetPivot().Position
-			for _1, cframe in cframes do
+			for _, cframe in cframes do
 				local _position = cframe.Position
 				local distance = (pivotPosition - _position).Magnitude
 				local _distancesArray = distancesArray
@@ -134,6 +166,7 @@ do
 		UnitsAction.formationSelected:Hide()
 	end)
 	UnitsAction.enabled = false
+	UnitsAction.units = {}
 	UnitsAction.formationSelected = LineFormation.new()
 	UnitsAction.cframe = CFrame.new()
 	UnitsAction.startPosition = Vector3.new()

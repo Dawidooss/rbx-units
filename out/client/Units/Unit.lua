@@ -4,13 +4,17 @@ local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts
 local ReplicatedFirst = _services.ReplicatedFirst
 local RunService = _services.RunService
 local Pathfinding = TS.import(script, script.Parent.Parent, "Pathfinding").default
-local UnitSelectionType
+local _Selectable = TS.import(script, script.Parent, "Selectable")
+local Selectable = _Selectable.default
+local SelectionType = _Selectable.SelectionType
 local Unit
 do
+	local super = Selectable
 	Unit = setmetatable({}, {
 		__tostring = function()
 			return "Unit"
 		end,
+		__index = super,
 	})
 	Unit.__index = Unit
 	function Unit.new(...)
@@ -18,7 +22,8 @@ do
 		return self:constructor(...) or self
 	end
 	function Unit:constructor(id, unitName, position)
-		self.selectionType = UnitSelectionType.None
+		super.constructor(self)
+		self.selectionType = SelectionType.None
 		self.selectionRadius = 1.5
 		self.id = id
 		self.unitName = unitName
@@ -58,13 +63,13 @@ do
 		local weld = Instance.new("WeldConstraint", self.selectionCircle)
 		weld.Part0 = self.selectionCircle
 		weld.Part1 = self.model.HumanoidRootPart
-		self:Select(UnitSelectionType.None)
+		self:Select(SelectionType.None)
 	end
 	function Unit:Select(selectionType)
 		self.selectionType = selectionType
-		self.pathfinding:EnableVisualisation(selectionType == UnitSelectionType.Selected)
+		self.pathfinding:EnableVisualisation(selectionType == SelectionType.Selected)
 		self:Update()
-		if selectionType == UnitSelectionType.Selected then
+		if selectionType == SelectionType.Selected then
 			RunService:BindToRenderStep("unit-" .. (self.id .. "-selectionUpdate"), 1, function()
 				return self:Update()
 			end)
@@ -77,42 +82,13 @@ do
 		self:Update()
 	end
 	function Unit:Update()
-		local selected = self.selectionType == UnitSelectionType.Selected
-		self.selectionCircle.Transparency = if self.selectionType == UnitSelectionType.None then 1 else 0.2
+		local selected = self.selectionType == SelectionType.Selected
+		self.selectionCircle.Transparency = if self.selectionType == SelectionType.None then 1 else 0.2
 		self.selectionCircle.Color = if selected then Color3.fromRGB(143, 142, 145) else Color3.fromRGB(70, 70, 70)
 	end
 	function Unit:Destroy()
 	end
 end
-local UnitData
-do
-	UnitData = setmetatable({}, {
-		__tostring = function()
-			return "UnitData"
-		end,
-	})
-	UnitData.__index = UnitData
-	function UnitData.new(...)
-		local self = setmetatable({}, UnitData)
-		return self:constructor(...) or self
-	end
-	function UnitData:constructor()
-	end
-end
-do
-	local _inverse = {}
-	UnitSelectionType = setmetatable({}, {
-		__index = _inverse,
-	})
-	UnitSelectionType.Selected = 0
-	_inverse[0] = "Selected"
-	UnitSelectionType.Hovering = 1
-	_inverse[1] = "Hovering"
-	UnitSelectionType.None = 2
-	_inverse[2] = "None"
-end
 return {
 	default = Unit,
-	UnitData = UnitData,
-	UnitSelectionType = UnitSelectionType,
 }

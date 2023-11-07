@@ -1,28 +1,28 @@
 import { ContextActionService, Debris, Players, RunService, UserInputService, Workspace } from "@rbxts/services";
 import guiInset from "../GuiInset";
-import Unit, { UnitSelectionType } from "./Unit";
 import UnitsManager from "./UnitsManager";
 import Input from "../Input";
 import HUD from "./HUD";
+import Selectable, { SelectionType } from "./Selectable";
 
 const player = Players.LocalPlayer;
 const playerGui = player.WaitForChild("PlayerGui") as PlayerGui;
 const camera = Workspace.CurrentCamera!;
 
-enum SelectionType {
+export enum SelectionMethod {
 	Box,
 	Single,
 	None,
 }
 
 export default abstract class Selection {
-	private static selectionType = SelectionType.None;
+	private static selectionType = SelectionMethod.None;
 	private static boxCornerPosition = new Vector2();
 	public static boxSize = new Vector2();
 	public static holding: boolean;
 
-	public static hoveringUnits: Array<Unit> = [];
-	public static selectedUnits = new Array<Unit>();
+	public static hoveringUnits = new Set<Selectable>();
+	public static selectedUnits = new Set<Selectable>();
 
 	public static Init() {
 		// handle if LMB pressed and relesed
@@ -59,11 +59,11 @@ export default abstract class Selection {
 		}
 	}
 
-	public static GetUnits(): Array<Unit> {
-		const units = new Array<Unit>();
+	private static FindHoveringUnits(): Set<Selectable> {
+		const units = new Set<Selectable>();
 
-		if (Selection.selectionType === SelectionType.Box) {
-			UnitsManager.GetUnits().forEach((unit) => {
+		if (Selection.selectionType === SelectionMethod.Box) {
+			for (const [_, unit] of UnitsManager.GetUnits()) {
 				const pivot = unit.model.GetPivot();
 				const screenPosition = camera.WorldToScreenPoint(pivot.Position)[0];
 
@@ -77,20 +77,25 @@ export default abstract class Selection {
 					screenPosition.Y <=
 						HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2)
 				) {
-					units.push(unit);
+					if (unit.group) {
+						units.clear();
+						units.add(unit.group);
+						break;
+					}
+					units.add(unit);
 				}
-			});
-		} else if (Selection.selectionType === SelectionType.Single) {
+			}
+		} else if (Selection.selectionType === SelectionMethod.Single) {
 			const mouseLocation = UserInputService.GetMouseLocation();
 			const mouseRay = camera.ViewportPointToRay(mouseLocation.X, mouseLocation.Y);
 
 			const result = Workspace.Raycast(mouseRay.Origin, mouseRay.Direction.mul(10000));
-			if (!result || !result.Instance) return [];
+			if (!result || !result.Instance) return units;
 
 			const unit = UnitsManager.GetUnit(result.Instance.Parent?.Name || "");
-			if (!unit) return [];
+			if (!unit) return units;
 
-			units.push(unit);
+			units.add(unit.group || unit);
 		}
 
 		return units;
@@ -98,36 +103,37 @@ export default abstract class Selection {
 
 	private static Update() {
 		const mouseLocation = UserInputService.GetMouseLocation().sub(new Vector2(0, guiInset));
-		const hoveringUnits = Selection.GetUnits();
+		const hoveringUnits = Selection.FindHoveringUnits();
 
 		const boxSize = Selection.boxCornerPosition!.sub(mouseLocation);
 		const middle = Selection.boxCornerPosition!.sub(boxSize.div(2));
 
 		// define if curently is box selecting or selecting single unit by just hovering
-		Selection.selectionType = boxSize.Magnitude > 3 && Selection.holding ? SelectionType.Box : SelectionType.Single;
-		HUD.gui.SelectionBox.Visible = Selection.selectionType === SelectionType.Box && Selection.holding;
+		Selection.selectionType =
+			boxSize.Magnitude > 3 && Selection.holding ? SelectionMethod.Box : SelectionMethod.Single;
+		HUD.gui.SelectionBox.Visible = Selection.selectionType === SelectionMethod.Box && Selection.holding;
 
 		// update selectionBox ui wether
-		if (Selection.selectionType === SelectionType.Box) {
-			Selection.selectionType = boxSize.Magnitude > 3 ? SelectionType.Box : SelectionType.Single;
+		if (Selection.selectionType === SelectionMethod.Box) {
+			Selection.selectionType = boxSize.Magnitude > 3 ? SelectionMethod.Box : SelectionMethod.Single;
 			Selection.boxSize = boxSize;
 
 			HUD.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y);
 			HUD.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y);
 		}
-		HUD.gui.SelectionBox.Visible = Selection.selectionType === SelectionType.Box;
+		HUD.gui.SelectionBox.Visible = Selection.selectionType === SelectionMethod.Box;
 
 		// unhover old units
 		Selection.hoveringUnits.forEach((unit) => {
-			if (unit.selectionType === UnitSelectionType.Hovering && !hoveringUnits.find((v) => v === unit)) {
-				unit.Select(UnitSelectionType.None);
+			if (unit.selectionType === SelectionType.Hovering && !hoveringUnits.has(unit)) {
+				unit.Select(SelectionType.None);
 			}
 		});
 
 		// hover new units
 		hoveringUnits.forEach((unit) => {
-			if (unit.selectionType === UnitSelectionType.None) {
-				unit.Select(UnitSelectionType.Hovering);
+			if (unit.selectionType === SelectionType.None) {
+				unit.Select(SelectionType.Hovering);
 			}
 		});
 
@@ -135,29 +141,25 @@ export default abstract class Selection {
 	}
 
 	public static ClearSelectedUnits() {
-		Selection.selectedUnits.forEach((unit) => {
-			unit.Select(UnitSelectionType.None);
-		});
-		Selection.selectedUnits = [];
+		for (const unit of Selection.selectedUnits) {
+			unit.Select(SelectionType.None);
+		}
+		Selection.selectedUnits.clear();
 	}
 
-	public static SelectUnits(units: Array<Unit>) {
-		units.forEach((unit) => {
+	public static SelectUnits(units: Set<Selectable>) {
+		for (const unit of units) {
 			if (this.selectedUnits.size() >= 100) return;
-			if (this.selectedUnits.find((v) => v === unit)) return;
-			unit.Select(UnitSelectionType.Selected);
-			Selection.selectedUnits.push(unit);
-		});
+			if (this.selectedUnits.has(unit)) return;
+			unit.Select(SelectionType.Selected);
+			Selection.selectedUnits.add(unit);
+		}
 	}
 
-	public static DeselectUnits(units: Array<Unit>) {
+	public static DeselectUnits(units: Set<Selectable>) {
 		units.forEach((unit) => {
-			unit.Select(UnitSelectionType.None);
-
-			const unitIndex = Selection.selectedUnits.findIndex((v) => v === unit);
-			if (unitIndex) {
-				Selection.selectedUnits.remove(unitIndex);
-			}
+			unit.Select(SelectionType.None);
+			const unitIndex = Selection.selectedUnits.delete(unit);
 		});
 	}
 }

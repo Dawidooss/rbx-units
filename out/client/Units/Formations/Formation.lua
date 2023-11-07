@@ -12,7 +12,7 @@ do
 		self.circle = ReplicatedFirst:WaitForChild(actionType):Clone()
 		self.arrow = self.circle.Arrow
 	end
-	function Formation:VisualisePositions(units, cframe, spread)
+	function Formation:VisualisePositions(amountOfUnits, cframe, spread)
 		if self.destroyed then
 			return nil
 		end
@@ -29,7 +29,7 @@ do
 		self.arrow.Right:PivotTo(self.arrow.Length.Attachment.WorldCFrame)
 		-- visualise positions
 		local mainCFrame = self.circle:GetPivot()
-		local cframes = self:GetCFramesInFormation(#units, mainCFrame, spread)
+		local cframes = self:GetCFramesInFormation(amountOfUnits, mainCFrame, spread)
 		self.circle.Positions:ClearAllChildren()
 		local _arg0 = function(cframe, i)
 			if i == 0 then
@@ -43,7 +43,7 @@ do
 			_arg0(_v, _k - 1, cframes)
 		end
 	end
-	function Formation:GetSpreadLimits(unitsAmount)
+	function Formation:GetSpreadLimits(amountOfUnits)
 		return { 4, 12 }
 	end
 	function Formation:Hide()

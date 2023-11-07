@@ -15,9 +15,13 @@ export default abstract class Formation {
 		this.arrow = this.circle.Arrow;
 	}
 
-	public abstract GetCFramesInFormation(unitsAmount: number, mainCFrame: CFrame, spread: number): Array<CFrame>;
+	public static abstract GetCFramesInFormation(
+		units: Set<Unit>,
+		mainCFrame: CFrame,
+		spread: number,
+	): Map<Unit, CFrame>;
 
-	public VisualisePositions(units: Unit[], cframe: CFrame, spread: number) {
+	public VisualisePositions(amountOfUnits: number, cframe: CFrame, spread: number) {
 		if (this.destroyed) return;
 
 		this.circle.PivotTo(cframe);
@@ -35,7 +39,7 @@ export default abstract class Formation {
 
 		// visualise positions
 		const mainCFrame = this.circle.GetPivot();
-		const cframes = this.GetCFramesInFormation(units.size(), mainCFrame, spread);
+		const cframes = this.GetCFramesInFormation(amountOfUnits, mainCFrame, spread);
 
 		this.circle.Positions.ClearAllChildren();
 		cframes.forEach((cframe, i) => {
@@ -46,7 +50,7 @@ export default abstract class Formation {
 		});
 	}
 
-	public GetSpreadLimits(unitsAmount: number): [number, number] {
+	public GetSpreadLimits(amountOfUnits: number): [number, number] {
 		return [4, 12];
 	}
 

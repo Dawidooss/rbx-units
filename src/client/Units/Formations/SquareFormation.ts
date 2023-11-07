@@ -1,17 +1,18 @@
 import { StarterGui } from "@rbxts/services";
 import Formation from "./Formation";
+import Unit from "../Unit";
 
 export default class SquareFormation extends Formation {
 	constructor() {
 		super("NormalAction");
 	}
 
-	GetCFramesInFormation(unitsAmount: number, mainCFrame: CFrame, spread: number): CFrame[] {
+	GetCFramesInFormation(units: Set<Unit>, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 
-		const unitsPerRow = math.ceil(math.sqrt(unitsAmount));
+		const unitsPerRow = math.ceil(math.sqrt(units.size()));
 
-		for (let i = 0; i < unitsAmount; i++) {
+		for (let i = 0; i < units.size(); i++) {
 			const row = math.floor(i / unitsPerRow);
 			const rowPosition = math.pow(-1, i) * math.ceil((i - row * unitsPerRow) / 2);
 

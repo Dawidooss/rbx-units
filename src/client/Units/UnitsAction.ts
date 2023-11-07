@@ -1,6 +1,6 @@
 import { RunService, Workspace } from "@rbxts/services";
 import Utils from "../Utils";
-import Unit from "./Unit";
+import Selectable from "./Selectable";
 import Formation from "./Formations/Formation";
 import Input from "client/Input";
 import Selection from "./Selection";
@@ -12,7 +12,7 @@ const camera = Workspace.CurrentCamera!;
 export default abstract class UnitsAction {
 	public static enabled = false;
 
-	private static units: Unit[];
+	private static units = new Set<Selectable>();
 	private static formationSelected = new LineFormation();
 	private static spreadLimits: [number, number];
 	private static cframe = new CFrame();
@@ -25,7 +25,8 @@ export default abstract class UnitsAction {
 			const units = Selection.selectedUnits;
 
 			endCallback = UnitsAction.GetActionCFrame(units, (cframe: CFrame, spread: number) => {
-				UnitsAction.MoveUnits(units, cframe, spread);
+				// UnitsAction.MoveUnits(units, cframe, spread);
+				print("MOVE UNITS");
 			});
 		});
 
@@ -41,7 +42,10 @@ export default abstract class UnitsAction {
 		oldFormation.Destroy();
 	}
 
-	public static GetActionCFrame(units: Unit[], resultCallback: (cframe: CFrame, spread: number) => void): Callback {
+	public static GetActionCFrame(
+		units: Set<Selectable>,
+		resultCallback: (cframe: CFrame, spread: number) => void,
+	): Callback {
 		UnitsAction.units = units;
 		UnitsAction.spreadLimits = UnitsAction.formationSelected.GetSpreadLimits(units.size());
 		UnitsAction.Enable(true);
@@ -84,53 +88,54 @@ export default abstract class UnitsAction {
 		const spread = math.clamp(arrowLength, UnitsAction.spreadLimits[0], UnitsAction.spreadLimits[1]);
 
 		UnitsAction.spread = spread;
-		if (UnitsAction.startPosition === mouseHitResult.Position) {
-			let medianPosition = new Vector3();
-			UnitsAction.units.forEach((unit) => {
-				medianPosition = medianPosition.add(unit.model.GetPivot().Position);
-			});
-			medianPosition = medianPosition.div(UnitsAction.units.size());
+		// if (UnitsAction.startPosition === mouseHitResult.Position) {
+		// 	let medianPosition = new Vector3();
+		// 	UnitsAction.units.forEach((unit) => {
+		// 		medianPosition = medianPosition.add(unit.model.GetPivot().Position);
+		// 	});
+		// 	medianPosition = medianPosition.div(UnitsAction.units.size());
 
-			const groundedMedianPosition = new Vector3(medianPosition.X, UnitsAction.startPosition.Y, medianPosition.Z);
-			UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMedianPosition).mul(
-				CFrame.Angles(0, math.pi, 0),
-			);
-		} else {
-			UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMousePosition);
-		}
+		// 	const groundedMedianPosition = new Vector3(medianPosition.X, UnitsAction.startPosition.Y, medianPosition.Z);
+		// 	UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMedianPosition).mul(
+		// 		CFrame.Angles(0, math.pi, 0),
+		// 	);
+		// } else {
+		// UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMousePosition);
+		// }
+		UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMousePosition);
 
-		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread);
+		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units.size(), UnitsAction.cframe, spread);
 	}
 
-	public static async MoveUnits(units: Array<Unit>, cframe: CFrame, spread: number) {
-		const cframes = UnitsAction.formationSelected.GetCFramesInFormation(units.size(), cframe, spread);
-		let distancesArray = new Array<[Unit, number, CFrame]>();
+	// public static async MoveUnits(units: Set<Selectable>, cframe: CFrame, spread: number) {
+	// 	const cframes = UnitsAction.formationSelected.GetCFramesInFormation(units.size(), cframe, spread);
+	// 	let distancesArray = new Array<[Selectable, number, CFrame]>();
 
-		for (const unit of units) {
-			const pivotPosition = unit.model.GetPivot().Position;
-			for (const cframe of cframes) {
-				const distance = pivotPosition.sub(cframe.Position).Magnitude;
-				distancesArray.push([unit, distance, cframe]);
-			}
-		}
+	// 	for (const unit of units) {
+	// 		const pivotPosition = unit.GetPosition();
+	// 		for (const cframe of cframes) {
+	// 			const distance = pivotPosition.sub(cframe.Position).Magnitude;
+	// 			distancesArray.push([unit, distance, cframe]);
+	// 		}
+	// 	}
 
-		distancesArray.sort((a, b) => {
-			return a[1] < b[1];
-		});
+	// 	distancesArray.sort((a, b) => {
+	// 		return a[1] < b[1];
+	// 	});
 
-		while (distancesArray.size() > 0) {
-			const closest = distancesArray[0];
-			closest[0].Move(closest[2]);
+	// 	while (distancesArray.size() > 0) {
+	// 		const closest = distancesArray[0];
+	// 		closest[0].Move(closest[2]);
 
-			const newDistancesArray = new Array<[Unit, number, CFrame]>();
-			distancesArray.forEach((v) => {
-				if (v[0] !== closest[0] && v[2] !== closest[2]) {
-					newDistancesArray.push(v);
-				}
-			});
-			distancesArray = newDistancesArray;
-		}
+	// 		const newDistancesArray = new Array<[Selectable, number, CFrame]>();
+	// 		distancesArray.forEach((v) => {
+	// 			if (v[0] !== closest[0] && v[2] !== closest[2]) {
+	// 				newDistancesArray.push(v);
+	// 			}
+	// 		});
+	// 		distancesArray = newDistancesArray;
+	// 	}
 
-		UnitsAction.formationSelected.Hide();
-	}
+	// 	UnitsAction.formationSelected.Hide();
+	// }
 }

@@ -7,24 +7,24 @@ local RunService = _services.RunService
 local UserInputService = _services.UserInputService
 local Workspace = _services.Workspace
 local guiInset = TS.import(script, script.Parent.Parent, "GuiInset").default
-local UnitSelectionType = TS.import(script, script.Parent, "Unit").UnitSelectionType
 local UnitsManager = TS.import(script, script.Parent, "UnitsManager").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
 local HUD = TS.import(script, script.Parent, "HUD").default
+local SelectionType = TS.import(script, script.Parent, "Selectable").SelectionType
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
-local SelectionType
+local SelectionMethod
 do
 	local _inverse = {}
-	SelectionType = setmetatable({}, {
+	SelectionMethod = setmetatable({}, {
 		__index = _inverse,
 	})
-	SelectionType.Box = 0
+	SelectionMethod.Box = 0
 	_inverse[0] = "Box"
-	SelectionType.Single = 1
+	SelectionMethod.Single = 1
 	_inverse[1] = "Single"
-	SelectionType.None = 2
+	SelectionMethod.None = 2
 	_inverse[2] = "None"
 end
 local Selection
@@ -61,27 +61,28 @@ do
 			end
 		end
 	end
-	function Selection:GetUnits()
+	function Selection:FindHoveringUnits()
 		local units = {}
-		if Selection.selectionType == SelectionType.Box then
-			local _exp = UnitsManager:GetUnits()
-			local _arg0 = function(unit)
+		if Selection.selectionType == SelectionMethod.Box then
+			for _, unit in UnitsManager:GetUnits() do
 				local pivot = unit.model:GetPivot()
 				local screenPosition = (camera:WorldToScreenPoint(pivot.Position))
 				if screenPosition.X >= HUD.gui.SelectionBox.Position.X.Offset - math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.X <= HUD.gui.SelectionBox.Position.X.Offset + math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.Y >= HUD.gui.SelectionBox.Position.Y.Offset - math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2) and screenPosition.Y <= HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2))) then
-					local _unit = unit
-					table.insert(units, _unit)
+					if unit.group then
+						table.clear(units)
+						local _group = unit.group
+						units[_group] = true
+						break
+					end
+					units[unit] = true
 				end
 			end
-			for _k, _v in _exp do
-				_arg0(_v, _k, _exp)
-			end
-		elseif Selection.selectionType == SelectionType.Single then
+		elseif Selection.selectionType == SelectionMethod.Single then
 			local mouseLocation = UserInputService:GetMouseLocation()
 			local mouseRay = camera:ViewportPointToRay(mouseLocation.X, mouseLocation.Y)
 			local result = Workspace:Raycast(mouseRay.Origin, mouseRay.Direction * 10000)
 			if not result or not result.Instance then
-				return {}
+				return units
 			end
 			local _fn = UnitsManager
 			local _result = result.Instance.Parent
@@ -94,9 +95,10 @@ do
 			end
 			local unit = _fn:GetUnit(_condition)
 			if not unit then
-				return {}
+				return units
 			end
-			table.insert(units, unit)
+			local _arg0 = unit.group or unit
+			units[_arg0] = true
 		end
 		return units
 	end
@@ -104,132 +106,95 @@ do
 		local _exp = UserInputService:GetMouseLocation()
 		local _vector2 = Vector2.new(0, guiInset)
 		local mouseLocation = _exp - _vector2
-		local hoveringUnits = Selection:GetUnits()
+		local hoveringUnits = Selection:FindHoveringUnits()
 		local boxSize = Selection.boxCornerPosition - mouseLocation
 		local _boxCornerPosition = Selection.boxCornerPosition
 		local _arg0 = boxSize / 2
 		local middle = _boxCornerPosition - _arg0
 		-- define if curently is box selecting or selecting single unit by just hovering
-		Selection.selectionType = if boxSize.Magnitude > 3 and Selection.holding then SelectionType.Box else SelectionType.Single
-		HUD.gui.SelectionBox.Visible = Selection.selectionType == SelectionType.Box and Selection.holding
+		Selection.selectionType = if boxSize.Magnitude > 3 and Selection.holding then SelectionMethod.Box else SelectionMethod.Single
+		HUD.gui.SelectionBox.Visible = Selection.selectionType == SelectionMethod.Box and Selection.holding
 		-- update selectionBox ui wether
-		if Selection.selectionType == SelectionType.Box then
-			Selection.selectionType = if boxSize.Magnitude > 3 then SelectionType.Box else SelectionType.Single
+		if Selection.selectionType == SelectionMethod.Box then
+			Selection.selectionType = if boxSize.Magnitude > 3 then SelectionMethod.Box else SelectionMethod.Single
 			Selection.boxSize = boxSize
 			HUD.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
 			HUD.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y)
 		end
-		HUD.gui.SelectionBox.Visible = Selection.selectionType == SelectionType.Box
+		HUD.gui.SelectionBox.Visible = Selection.selectionType == SelectionMethod.Box
 		-- unhover old units
 		local _hoveringUnits = Selection.hoveringUnits
 		local _arg0_1 = function(unit)
-			local _condition = unit.selectionType == UnitSelectionType.Hovering
+			local _condition = unit.selectionType == SelectionType.Hovering
 			if _condition then
-				local _arg0_2 = function(v)
-					return v == unit
-				end
-				-- ▼ ReadonlyArray.find ▼
-				local _result
-				for _i, _v in hoveringUnits do
-					if _arg0_2(_v, _i - 1, hoveringUnits) == true then
-						_result = _v
-						break
-					end
-				end
-				-- ▲ ReadonlyArray.find ▲
-				_condition = not _result
+				local _unit = unit
+				_condition = not (hoveringUnits[_unit] ~= nil)
 			end
 			if _condition then
-				unit:Select(UnitSelectionType.None)
+				unit:Select(SelectionType.None)
 			end
 		end
-		for _k, _v in _hoveringUnits do
-			_arg0_1(_v, _k - 1, _hoveringUnits)
+		for _v in _hoveringUnits do
+			_arg0_1(_v, _v, _hoveringUnits)
 		end
 		-- hover new units
 		local _arg0_2 = function(unit)
-			if unit.selectionType == UnitSelectionType.None then
-				unit:Select(UnitSelectionType.Hovering)
+			if unit.selectionType == SelectionType.None then
+				unit:Select(SelectionType.Hovering)
 			end
 		end
-		for _k, _v in hoveringUnits do
-			_arg0_2(_v, _k - 1, hoveringUnits)
+		for _v in hoveringUnits do
+			_arg0_2(_v, _v, hoveringUnits)
 		end
 		Selection.hoveringUnits = hoveringUnits
 	end
 	function Selection:ClearSelectedUnits()
-		local _selectedUnits = Selection.selectedUnits
-		local _arg0 = function(unit)
-			unit:Select(UnitSelectionType.None)
+		for unit in Selection.selectedUnits do
+			unit:Select(SelectionType.None)
 		end
-		for _k, _v in _selectedUnits do
-			_arg0(_v, _k - 1, _selectedUnits)
-		end
-		Selection.selectedUnits = {}
+		table.clear(Selection.selectedUnits)
 	end
 	function Selection:SelectUnits(units)
-		local _units = units
-		local _arg0 = function(unit)
-			if #self.selectedUnits >= 100 then
+		for unit in units do
+			-- ▼ ReadonlySet.size ▼
+			local _size = 0
+			for _ in self.selectedUnits do
+				_size += 1
+			end
+			-- ▲ ReadonlySet.size ▲
+			if _size >= 100 then
 				return nil
 			end
-			local _selectedUnits = self.selectedUnits
-			local _arg0_1 = function(v)
-				return v == unit
-			end
-			-- ▼ ReadonlyArray.find ▼
-			local _result
-			for _i, _v in _selectedUnits do
-				if _arg0_1(_v, _i - 1, _selectedUnits) == true then
-					_result = _v
-					break
-				end
-			end
-			-- ▲ ReadonlyArray.find ▲
-			if _result then
+			if self.selectedUnits[unit] ~= nil then
 				return nil
 			end
-			unit:Select(UnitSelectionType.Selected)
-			local _selectedUnits_1 = Selection.selectedUnits
-			local _unit = unit
-			table.insert(_selectedUnits_1, _unit)
-		end
-		for _k, _v in _units do
-			_arg0(_v, _k - 1, _units)
+			unit:Select(SelectionType.Selected)
+			Selection.selectedUnits[unit] = true
 		end
 	end
 	function Selection:DeselectUnits(units)
 		local _units = units
 		local _arg0 = function(unit)
-			unit:Select(UnitSelectionType.None)
+			unit:Select(SelectionType.None)
 			local _selectedUnits = Selection.selectedUnits
-			local _arg0_1 = function(v)
-				return v == unit
-			end
-			-- ▼ ReadonlyArray.findIndex ▼
-			local _result = -1
-			for _i, _v in _selectedUnits do
-				if _arg0_1(_v, _i - 1, _selectedUnits) == true then
-					_result = _i - 1
-					break
-				end
-			end
-			-- ▲ ReadonlyArray.findIndex ▲
-			local unitIndex = _result
-			if unitIndex ~= 0 and (unitIndex == unitIndex and unitIndex) then
-				table.remove(Selection.selectedUnits, unitIndex + 1)
-			end
+			local _unit = unit
+			-- ▼ Set.delete ▼
+			local _valueExisted = _selectedUnits[_unit] ~= nil
+			_selectedUnits[_unit] = nil
+			-- ▲ Set.delete ▲
+			local unitIndex = _valueExisted
 		end
-		for _k, _v in _units do
-			_arg0(_v, _k - 1, _units)
+		for _v in _units do
+			_arg0(_v, _v, _units)
 		end
 	end
-	Selection.selectionType = SelectionType.None
+	Selection.selectionType = SelectionMethod.None
 	Selection.boxCornerPosition = Vector2.new()
 	Selection.boxSize = Vector2.new()
 	Selection.hoveringUnits = {}
 	Selection.selectedUnits = {}
 end
 return {
+	SelectionMethod = SelectionMethod,
 	default = Selection,
 }
