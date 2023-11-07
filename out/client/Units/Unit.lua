@@ -81,6 +81,9 @@ do
 		self.pathfinding:Start(cframe)
 		self:Update()
 	end
+	function Unit:GetPosition()
+		return self.model:GetPivot().Position
+	end
 	function Unit:Update()
 		local selected = self.selectionType == SelectionType.Selected
 		self.selectionCircle.Transparency = if self.selectionType == SelectionType.None then 1 else 0.2

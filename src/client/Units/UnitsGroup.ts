@@ -20,9 +20,10 @@ export default class UnitsGroup extends Selectable {
 	}
 
 	public Select(selectionType: SelectionType): void {
-		for (const unit of this.units) {
+		for (let unit of this.units) {
 			unit.Select(selectionType);
 		}
+		this.selectionType = selectionType;
 	}
 
 	public static FormGroup(selectables: Set<Selectable>) {
@@ -36,13 +37,7 @@ export default class UnitsGroup extends Selectable {
 
 		if (units.size() === 0) return;
 
-		const group = new UnitsGroup(units);
-
-		const groupSet = new Set<UnitsGroup>();
-		groupSet.add(group);
-
-		Selection.ClearSelectedUnits();
-		Selection.SelectUnits(groupSet);
+		return new UnitsGroup(units);
 	}
 
 	public GetPosition(): Vector3 {
@@ -54,5 +49,13 @@ export default class UnitsGroup extends Selectable {
 		}
 		position = position.div(this.units.size());
 		return position;
+	}
+
+	public Move(cframe: CFrame): void {
+		for (const unit of this.units) {
+			const offset = this.offsets.get(unit);
+			if (!offset) continue;
+			unit.Move(cframe.mul(offset));
+		}
 	}
 }

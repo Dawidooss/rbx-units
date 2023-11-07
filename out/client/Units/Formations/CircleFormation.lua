@@ -20,7 +20,7 @@ do
 	function CircleFormation:constructor()
 		super.constructor(self, "CircularAction")
 	end
-	function CircleFormation:GetCFramesInFormation(amountOfUnits, mainCFrame, spread)
+	function CircleFormation:GetCFramesInFormation(units, mainCFrame, spread)
 		local cframes = {}
 		do
 			local i = 0
@@ -31,10 +31,23 @@ do
 				else
 					_shouldIncrement = true
 				end
-				if not (i < amountOfUnits) then
+				local _exp = i
+				-- ▼ ReadonlySet.size ▼
+				local _size = 0
+				for _ in units do
+					_size += 1
+				end
+				-- ▲ ReadonlySet.size ▲
+				if not (_exp < _size) then
 					break
 				end
-				local rotation = (360 / amountOfUnits) * i
+				-- ▼ ReadonlySet.size ▼
+				local _size_1 = 0
+				for _ in units do
+					_size_1 += 1
+				end
+				-- ▲ ReadonlySet.size ▲
+				local rotation = (360 / _size_1) * i
 				local _mainCFrame = mainCFrame
 				local _arg0 = CFrame.Angles(0, math.rad(rotation) + math.pi, 0)
 				local _cFrame = CFrame.new(0, 0, -spread)
@@ -44,7 +57,7 @@ do
 		end
 		return cframes
 	end
-	function CircleFormation:VisualisePositions(amountOfUnits, cframe, spread)
+	function CircleFormation:VisualisePositions(units, cframe, spread)
 		if self.destroyed then
 			return nil
 		end

@@ -11,6 +11,7 @@ local UnitsManager = TS.import(script, script.Parent, "UnitsManager").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
 local HUD = TS.import(script, script.Parent, "HUD").default
 local SelectionType = TS.import(script, script.Parent, "Selectable").SelectionType
+local UnitsGroup = TS.import(script, script.Parent, "UnitsGroup").default
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
@@ -168,8 +169,20 @@ do
 			if self.selectedUnits[unit] ~= nil then
 				return nil
 			end
-			unit:Select(SelectionType.Selected)
-			Selection.selectedUnits[unit] = true
+			if TS.instanceof(unit, UnitsGroup) then
+				Selection:ClearSelectedUnits()
+				unit:Select(SelectionType.Selected)
+				Selection.selectedUnits[unit] = true
+				-- Selection.groupSelected = true;
+				return nil
+			else
+				if Selection:IsGroupSelected() and not (TS.instanceof(unit, UnitsGroup)) then
+					Selection:ClearSelectedUnits()
+				end
+				unit:Select(SelectionType.Selected)
+				Selection.selectedUnits[unit] = true
+				-- Selection.groupSelected = false;
+			end
 		end
 	end
 	function Selection:DeselectUnits(units)
@@ -182,10 +195,21 @@ do
 			local _valueExisted = _selectedUnits[_unit] ~= nil
 			_selectedUnits[_unit] = nil
 			-- ▲ Set.delete ▲
-			local unitIndex = _valueExisted
+			local deleted = _valueExisted
+			-- if (deleted && unit instanceof UnitsGroup) {
+			-- Selection.groupSelected = false;
+			-- }
 		end
 		for _v in _units do
 			_arg0(_v, _v, _units)
+		end
+	end
+	function Selection:IsGroupSelected()
+		for unit in Selection.selectedUnits do
+			if TS.instanceof(unit, UnitsGroup) then
+				return unit
+			end
+			break
 		end
 	end
 	Selection.selectionType = SelectionMethod.None

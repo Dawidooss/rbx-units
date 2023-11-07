@@ -6,6 +6,8 @@ import Input from "client/Input";
 import Selection from "./Selection";
 import CircleFormation from "./Formations/CircleFormation";
 import LineFormation from "./Formations/LineFormation";
+import UnitsGroup from "./UnitsGroup";
+import GroupFormation from "./Formations/GroupFormation";
 
 const camera = Workspace.CurrentCamera!;
 
@@ -24,9 +26,18 @@ export default abstract class UnitsAction {
 		Input.Bind(Enum.UserInputType.MouseButton2, Enum.UserInputState.Begin, () => {
 			const units = Selection.selectedUnits;
 
+			if (units.size() === 0) return;
+
+			const groupSelected = Selection.IsGroupSelected();
+			if (groupSelected) {
+				UnitsAction.SetFormation(new GroupFormation(groupSelected));
+			} else {
+				UnitsAction.SetFormation(new LineFormation());
+			}
+
 			endCallback = UnitsAction.GetActionCFrame(units, (cframe: CFrame, spread: number) => {
-				// UnitsAction.MoveUnits(units, cframe, spread);
-				print("MOVE UNITS");
+				UnitsAction.MoveUnits(units, cframe, spread);
+				this.formationSelected.Hide();
 			});
 		});
 
@@ -104,38 +115,15 @@ export default abstract class UnitsAction {
 		// }
 		UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMousePosition);
 
-		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units.size(), UnitsAction.cframe, spread);
+		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread);
 	}
 
-	// public static async MoveUnits(units: Set<Selectable>, cframe: CFrame, spread: number) {
-	// 	const cframes = UnitsAction.formationSelected.GetCFramesInFormation(units.size(), cframe, spread);
-	// 	let distancesArray = new Array<[Selectable, number, CFrame]>();
+	public static async MoveUnits(units: Set<Selectable>, cframe: CFrame, spread: number) {
+		const cframes = UnitsAction.formationSelected.GetCFramesInFormation(units, cframe, spread);
+		const unitsAndCFrames = UnitsAction.formationSelected.MatchUnitsToCFrames(units, cframes, cframe);
 
-	// 	for (const unit of units) {
-	// 		const pivotPosition = unit.GetPosition();
-	// 		for (const cframe of cframes) {
-	// 			const distance = pivotPosition.sub(cframe.Position).Magnitude;
-	// 			distancesArray.push([unit, distance, cframe]);
-	// 		}
-	// 	}
-
-	// 	distancesArray.sort((a, b) => {
-	// 		return a[1] < b[1];
-	// 	});
-
-	// 	while (distancesArray.size() > 0) {
-	// 		const closest = distancesArray[0];
-	// 		closest[0].Move(closest[2]);
-
-	// 		const newDistancesArray = new Array<[Selectable, number, CFrame]>();
-	// 		distancesArray.forEach((v) => {
-	// 			if (v[0] !== closest[0] && v[2] !== closest[2]) {
-	// 				newDistancesArray.push(v);
-	// 			}
-	// 		});
-	// 		distancesArray = newDistancesArray;
-	// 	}
-
-	// 	UnitsAction.formationSelected.Hide();
-	// }
+		for (const [unit, cframe] of unitsAndCFrames) {
+			unit.Move(cframe);
+		}
+	}
 }

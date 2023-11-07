@@ -4,6 +4,7 @@ import UnitsManager from "./UnitsManager";
 import Input from "../Input";
 import HUD from "./HUD";
 import Selectable, { SelectionType } from "./Selectable";
+import UnitsGroup from "./UnitsGroup";
 
 const player = Players.LocalPlayer;
 const playerGui = player.WaitForChild("PlayerGui") as PlayerGui;
@@ -151,15 +152,43 @@ export default abstract class Selection {
 		for (const unit of units) {
 			if (this.selectedUnits.size() >= 100) return;
 			if (this.selectedUnits.has(unit)) return;
-			unit.Select(SelectionType.Selected);
-			Selection.selectedUnits.add(unit);
+
+			if (unit instanceof UnitsGroup) {
+				Selection.ClearSelectedUnits();
+
+				unit.Select(SelectionType.Selected);
+				Selection.selectedUnits.add(unit);
+				// Selection.groupSelected = true;
+				return; // only 1 selected group allowed
+			} else {
+				if (Selection.IsGroupSelected() && !(unit instanceof UnitsGroup)) {
+					Selection.ClearSelectedUnits();
+				}
+
+				unit.Select(SelectionType.Selected);
+				Selection.selectedUnits.add(unit);
+				// Selection.groupSelected = false;
+			}
 		}
 	}
 
 	public static DeselectUnits(units: Set<Selectable>) {
 		units.forEach((unit) => {
 			unit.Select(SelectionType.None);
-			const unitIndex = Selection.selectedUnits.delete(unit);
+			const deleted = Selection.selectedUnits.delete(unit);
+
+			// if (deleted && unit instanceof UnitsGroup) {
+			// 	Selection.groupSelected = false;
+			// }
 		});
+	}
+
+	public static IsGroupSelected(): UnitsGroup | undefined {
+		for (const unit of Selection.selectedUnits) {
+			if (unit instanceof UnitsGroup) {
+				return unit;
+			}
+			break;
+		}
 	}
 }

@@ -1,7 +1,5 @@
 import { ReplicatedFirst, Workspace } from "@rbxts/services";
-import UnitsAction from "../UnitsAction";
-import Unit from "../Unit";
-import Movement from "client/Movement";
+import Selectable from "../Selectable";
 
 const camera = Workspace.CurrentCamera!;
 
@@ -15,13 +13,37 @@ export default abstract class Formation {
 		this.arrow = this.circle.Arrow;
 	}
 
-	public static abstract GetCFramesInFormation(
-		units: Set<Unit>,
-		mainCFrame: CFrame,
-		spread: number,
-	): Map<Unit, CFrame>;
+	public MatchUnitsToCFrames(units: Set<Selectable>, cframes: CFrame[], mainCFrame: CFrame): Map<Selectable, CFrame> {
+		const matchedUnitsToCFrames = new Map<Selectable, CFrame>();
 
-	public VisualisePositions(amountOfUnits: number, cframe: CFrame, spread: number) {
+		let distancesArray = new Array<[Selectable, number, CFrame]>();
+		for (const unit of units) {
+			const pivotPosition = unit.GetPosition();
+			for (const cframe of cframes) {
+				const distance = pivotPosition.sub(cframe.Position).Magnitude;
+				distancesArray.push([unit, distance, cframe]);
+			}
+		}
+		distancesArray.sort((a, b) => {
+			return a[1] < b[1];
+		});
+
+		const visitedUnits = new Set<Selectable>();
+		const visitedCFrames = new Set<CFrame>();
+
+		for (const [unit, , cframe] of distancesArray) {
+			if (visitedUnits.has(unit) || visitedCFrames.has(cframe)) {
+				continue;
+			}
+			matchedUnitsToCFrames.set(unit, cframe);
+		}
+
+		return matchedUnitsToCFrames;
+	}
+
+	public abstract GetCFramesInFormation(units: Set<Selectable>, mainCFrame: CFrame, spread: number): CFrame[];
+
+	public VisualisePositions(units: Set<Selectable>, cframe: CFrame, spread: number) {
 		if (this.destroyed) return;
 
 		this.circle.PivotTo(cframe);
@@ -39,12 +61,12 @@ export default abstract class Formation {
 
 		// visualise positions
 		const mainCFrame = this.circle.GetPivot();
-		const cframes = this.GetCFramesInFormation(amountOfUnits, mainCFrame, spread);
+		const matchedCframes = this.GetCFramesInFormation(units, mainCFrame, spread);
 
 		this.circle.Positions.ClearAllChildren();
-		cframes.forEach((cframe, i) => {
-			if (i === 0) return;
+		matchedCframes.forEach((cframe) => {
 			const positionPart = this.circle.Middle.Clone() as BasePart;
+			positionPart.Transparency = 0;
 			positionPart.PivotTo(cframe);
 			positionPart.Parent = this.circle.Positions;
 		});

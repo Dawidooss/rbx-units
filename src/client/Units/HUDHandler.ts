@@ -12,6 +12,16 @@ export default abstract class HUDHandler {
 		HUD.gui.Formations.Square.MouseButton1Click.Connect(() => UnitsAction.SetFormation(new SquareFormation()));
 		HUD.gui.Formations.Circle.MouseButton1Click.Connect(() => UnitsAction.SetFormation(new CircleFormation()));
 
-		HUD.gui.FormGroup.MouseButton1Click.Connect(() => UnitsGroup.FormGroup(Selection.selectedUnits));
+		HUD.gui.FormGroup.MouseButton1Click.Connect(() => {
+			const group = UnitsGroup.FormGroup(Selection.selectedUnits);
+			Selection.ClearSelectedUnits();
+
+			if (!group) return;
+
+			const groupSet = new Set<UnitsGroup>();
+			groupSet.add(group);
+
+			Selection.SelectUnits(groupSet);
+		});
 	}
 }

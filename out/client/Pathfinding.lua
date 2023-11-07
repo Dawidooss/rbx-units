@@ -149,7 +149,6 @@ do
 		local _worldPosition = self.beamAttachment.WorldPosition
 		local distanceToCurrentWaypoint = (groundedCurrentWaypoint - _worldPosition).Magnitude
 		if distanceToCurrentWaypoint > 1 and self.agent.Humanoid:GetState() ~= Enum.HumanoidStateType.Running then
-			print(distanceToCurrentWaypoint)
 			self.moveToCurrentWaypointTries += 1
 			self:MoveToCurrentWaypoint()
 		end
@@ -184,6 +183,7 @@ do
 				visualisationPart.Beam.Attachment1 = previousVisualisationAtt
 				visualisationPart.Beam.TextureLength = toTargetCFrameDistance
 				visualisationPart.Name = self.pathId .. ("#" .. tostring(waypointIndex))
+				visualisationPart.Transparency = if waypointIndex == #self.waypoints - 1 then 0 else 1
 				visualisationPart.Parent = self.visualisation.Positions
 				previousVisualisationAtt = visualisationPart.Attachment
 			end

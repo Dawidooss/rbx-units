@@ -166,7 +166,6 @@ export default class Pathfinding {
 		const distanceToCurrentWaypoint = groundedCurrentWaypoint.sub(this.beamAttachment.WorldPosition).Magnitude;
 
 		if (distanceToCurrentWaypoint > 1 && this.agent.Humanoid.GetState() !== Enum.HumanoidStateType.Running) {
-			print(distanceToCurrentWaypoint);
 			this.moveToCurrentWaypointTries += 1;
 			this.MoveToCurrentWaypoint();
 		}

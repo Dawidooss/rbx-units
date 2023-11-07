@@ -23,7 +23,14 @@ do
 			return UnitsAction:SetFormation(CircleFormation.new())
 		end)
 		HUD.gui.FormGroup.MouseButton1Click:Connect(function()
-			return UnitsGroup:FormGroup(Selection.selectedUnits)
+			local group = UnitsGroup:FormGroup(Selection.selectedUnits)
+			Selection:ClearSelectedUnits()
+			if not group then
+				return nil
+			end
+			local groupSet = {}
+			groupSet[group] = true
+			Selection:SelectUnits(groupSet)
 		end)
 	end
 end

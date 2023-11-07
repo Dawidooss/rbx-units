@@ -12,7 +12,37 @@ do
 		self.circle = ReplicatedFirst:WaitForChild(actionType):Clone()
 		self.arrow = self.circle.Arrow
 	end
-	function Formation:VisualisePositions(amountOfUnits, cframe, spread)
+	function Formation:MatchUnitsToCFrames(units, cframes, mainCFrame)
+		local matchedUnitsToCFrames = {}
+		local distancesArray = {}
+		for unit in units do
+			local pivotPosition = unit:GetPosition()
+			for _, cframe in cframes do
+				local _position = cframe.Position
+				local distance = (pivotPosition - _position).Magnitude
+				local _distancesArray = distancesArray
+				local _arg0 = { unit, distance, cframe }
+				table.insert(_distancesArray, _arg0)
+			end
+		end
+		local _distancesArray = distancesArray
+		local _arg0 = function(a, b)
+			return a[2] < b[2]
+		end
+		table.sort(_distancesArray, _arg0)
+		local visitedUnits = {}
+		local visitedCFrames = {}
+		for _, _binding in distancesArray do
+			local unit = _binding[1]
+			local cframe = _binding[3]
+			if visitedUnits[unit] ~= nil or visitedCFrames[cframe] ~= nil then
+				continue
+			end
+			matchedUnitsToCFrames[unit] = cframe
+		end
+		return matchedUnitsToCFrames
+	end
+	function Formation:VisualisePositions(units, cframe, spread)
 		if self.destroyed then
 			return nil
 		end
@@ -29,18 +59,16 @@ do
 		self.arrow.Right:PivotTo(self.arrow.Length.Attachment.WorldCFrame)
 		-- visualise positions
 		local mainCFrame = self.circle:GetPivot()
-		local cframes = self:GetCFramesInFormation(amountOfUnits, mainCFrame, spread)
+		local matchedCframes = self:GetCFramesInFormation(units, mainCFrame, spread)
 		self.circle.Positions:ClearAllChildren()
-		local _arg0 = function(cframe, i)
-			if i == 0 then
-				return nil
-			end
+		local _arg0 = function(cframe)
 			local positionPart = self.circle.Middle:Clone()
+			positionPart.Transparency = 0
 			positionPart:PivotTo(cframe)
 			positionPart.Parent = self.circle.Positions
 		end
-		for _k, _v in cframes do
-			_arg0(_v, _k - 1, cframes)
+		for _k, _v in matchedCframes do
+			_arg0(_v, _k - 1, matchedCframes)
 		end
 	end
 	function Formation:GetSpreadLimits(amountOfUnits)

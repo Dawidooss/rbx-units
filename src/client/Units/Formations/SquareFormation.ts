@@ -1,13 +1,13 @@
 import { StarterGui } from "@rbxts/services";
 import Formation from "./Formation";
-import Unit from "../Unit";
+import Selectable from "../Selectable";
 
 export default class SquareFormation extends Formation {
 	constructor() {
 		super("NormalAction");
 	}
 
-	GetCFramesInFormation(units: Set<Unit>, mainCFrame: CFrame, spread: number): CFrame[] {
+	GetCFramesInFormation(units: Set<Selectable>, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 
 		const unitsPerRow = math.ceil(math.sqrt(units.size()));

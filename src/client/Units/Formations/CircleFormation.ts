@@ -1,7 +1,7 @@
 import { ReplicatedFirst, Workspace } from "@rbxts/services";
-import Unit from "../Unit";
 import Formation from "./Formation";
 import Utils from "client/Utils";
+import Selectable from "../Selectable";
 
 const camera = Workspace.CurrentCamera!;
 
@@ -10,7 +10,7 @@ export default class CircleFormation extends Formation {
 		super("CircularAction");
 	}
 
-	public GetCFramesInFormation(units: Set<Unit>, mainCFrame: CFrame, spread: number): CFrame[] {
+	public GetCFramesInFormation(units: Set<Selectable>, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 
 		for (let i = 0; i < units.size(); i++) {
@@ -25,7 +25,7 @@ export default class CircleFormation extends Formation {
 		return cframes;
 	}
 
-	public VisualisePositions(amountOfUnits: number, cframe: CFrame, spread: number): void {
+	public VisualisePositions(units: Set<Selectable>, cframe: CFrame, spread: number): void {
 		if (this.destroyed) return;
 
 		this.circle.PivotTo(new CFrame(cframe.Position));

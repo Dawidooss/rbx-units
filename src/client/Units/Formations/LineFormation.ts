@@ -1,15 +1,14 @@
-import { StarterGui } from "@rbxts/services";
+import { StarterGui, Workspace } from "@rbxts/services";
 import Formation from "./Formation";
-import Unit from "../Unit";
+import Selectable from "../Selectable";
 
 export default class LineFormation extends Formation {
 	constructor() {
 		super("NormalAction");
 	}
 
-	GetCFramesInFormation(units: Set<Unit>, mainCFrame: CFrame, spread: number): CFrame[] {
+	GetCFramesInFormation(units: Set<Selectable>, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
-
 		const unitsPerRow = 15;
 
 		for (let i = 0; i < units.size(); i++) {

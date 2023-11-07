@@ -3,29 +3,40 @@ import Unit from "../Unit";
 import Formation from "./Formation";
 import Utils from "client/Utils";
 import UnitsGroup from "../UnitsGroup";
+import Selectable from "../Selectable";
 
 const camera = Workspace.CurrentCamera!;
 
-export default class CircleFormation extends Formation {
+export default class GroupFormation extends Formation {
 	public group: UnitsGroup;
 
 	constructor(group: UnitsGroup) {
-		super("CircularAction");
+		super("NormalAction");
 
 		this.group = group;
 	}
 
-	public GetCFramesInFormation(units: Set<Unit>, mainCFrame: CFrame, spread: number): Map<Unit, CFrame> {
+	public GetCFramesInFormation(units: Set<Selectable>, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 
-		return this.group.offsets;
-	}
+		for (const [unit, offset] of this.group.offsets) {
+			cframes.push(mainCFrame.mul(offset));
+		}
 
-	public VisualisePositions(amountOfUnits: number, cframe: CFrame, spread: number): void {
-		if (this.destroyed) return;
+		return cframes;
 	}
 
 	public GetSpreadLimits(amountOfUnits: number): [number, number] {
 		return [0, 0];
+	}
+
+	public MatchUnitsToCFrames(units: Set<Selectable>, cframes: CFrame[], mainCFrame: CFrame): Map<Selectable, CFrame> {
+		const map = new Map<Selectable, CFrame>();
+
+		for (const unit of units) {
+			map.set(unit, mainCFrame);
+		}
+
+		return map;
 	}
 }
