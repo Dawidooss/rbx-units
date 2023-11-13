@@ -1,5 +1,7 @@
 import { ReplicatedFirst, Workspace } from "@rbxts/services";
 import Selectable from "../Selectable";
+import Utils from "client/Utils";
+import UnitsManager from "../UnitsManager";
 
 const camera = Workspace.CurrentCamera!;
 
@@ -36,6 +38,8 @@ export default abstract class Formation {
 				continue;
 			}
 			matchedUnitsToCFrames.set(unit, cframe);
+			visitedUnits.add(unit);
+			visitedCFrames.add(cframe);
 		}
 
 		return matchedUnitsToCFrames;
@@ -67,7 +71,21 @@ export default abstract class Formation {
 		matchedCframes.forEach((cframe) => {
 			const positionPart = this.circle.Middle.Clone() as BasePart;
 			positionPart.Transparency = 0;
-			positionPart.PivotTo(cframe);
+
+			const groundPositionResult = Utils.RaycastBottom(
+				cframe.Position.add(new Vector3(0, 100, 0)),
+				[Workspace.TerrainParts],
+				Enum.RaycastFilterType.Include,
+			);
+
+			if (!groundPositionResult) return;
+
+			positionPart.PivotTo(
+				new CFrame(
+					groundPositionResult.Position,
+					groundPositionResult.Position.add(groundPositionResult.Normal),
+				).mul(CFrame.Angles(math.pi / 2, 0, 0)),
+			);
 			positionPart.Parent = this.circle.Positions;
 		});
 	}

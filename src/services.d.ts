@@ -23,3 +23,9 @@ interface ReplicatedFirst extends Instance {
 		[unitName: string]: UnitModel;
 	};
 }
+
+interface Workspace extends Instance {
+	TerrainParts: Folder & {
+		[name: string]: BasePart;
+	};
+}

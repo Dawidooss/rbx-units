@@ -1,5 +1,13 @@
-import { AvatarEditorService, HttpService, PathfindingService, ReplicatedFirst, RunService } from "@rbxts/services";
+import {
+	AvatarEditorService,
+	HttpService,
+	PathfindingService,
+	ReplicatedFirst,
+	RunService,
+	Workspace,
+} from "@rbxts/services";
 import Unit from "./Units/Unit";
+import Utils from "./Utils";
 
 const agentParams = {
 	AgentCanJump: false,
@@ -186,7 +194,19 @@ export default class Pathfinding {
 			const toTargetCFrameDistance = previousVisualisationAtt.WorldPosition.sub(waypoint.Position).Magnitude;
 
 			const visualisationPart = this.visualisationPart.Clone();
-			visualisationPart.PivotTo(new CFrame(waypoint.Position, previousVisualisationAtt.WorldPosition));
+
+			const groundPositionResult = Utils.RaycastBottom(
+				waypoint.Position.add(new Vector3(0, 100, 0)),
+				[Workspace.TerrainParts],
+				Enum.RaycastFilterType.Include,
+			);
+			if (!groundPositionResult) continue;
+			const cframe = new CFrame(
+				groundPositionResult.Position,
+				groundPositionResult.Position.add(groundPositionResult.Normal),
+			).mul(CFrame.Angles(math.pi / 2, 0, 0));
+
+			visualisationPart.PivotTo(cframe);
 
 			visualisationPart.Beam.Attachment1 = previousVisualisationAtt;
 			visualisationPart.Beam.TextureLength = toTargetCFrameDistance;

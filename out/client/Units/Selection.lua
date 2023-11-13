@@ -11,7 +11,7 @@ local UnitsManager = TS.import(script, script.Parent, "UnitsManager").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
 local HUD = TS.import(script, script.Parent, "HUD").default
 local SelectionType = TS.import(script, script.Parent, "Selectable").SelectionType
-local UnitsGroup = TS.import(script, script.Parent, "UnitsGroup").default
+local Utils = TS.import(script, script.Parent.Parent, "Utils").default
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
@@ -69,19 +69,11 @@ do
 				local pivot = unit.model:GetPivot()
 				local screenPosition = (camera:WorldToScreenPoint(pivot.Position))
 				if screenPosition.X >= HUD.gui.SelectionBox.Position.X.Offset - math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.X <= HUD.gui.SelectionBox.Position.X.Offset + math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.Y >= HUD.gui.SelectionBox.Position.Y.Offset - math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2) and screenPosition.Y <= HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2))) then
-					if unit.group then
-						table.clear(units)
-						local _group = unit.group
-						units[_group] = true
-						break
-					end
 					units[unit] = true
 				end
 			end
 		elseif Selection.selectionType == SelectionMethod.Single then
-			local mouseLocation = UserInputService:GetMouseLocation()
-			local mouseRay = camera:ViewportPointToRay(mouseLocation.X, mouseLocation.Y)
-			local result = Workspace:Raycast(mouseRay.Origin, mouseRay.Direction * 10000)
+			local result = Utils:GetMouseHit()
 			if not result or not result.Instance then
 				return units
 			end
@@ -98,8 +90,6 @@ do
 			if not unit then
 				return units
 			end
-			local _arg0 = unit.group or unit
-			units[_arg0] = true
 		end
 		return units
 	end
@@ -169,20 +159,8 @@ do
 			if self.selectedUnits[unit] ~= nil then
 				return nil
 			end
-			if TS.instanceof(unit, UnitsGroup) then
-				Selection:ClearSelectedUnits()
-				unit:Select(SelectionType.Selected)
-				Selection.selectedUnits[unit] = true
-				-- Selection.groupSelected = true;
-				return nil
-			else
-				if Selection:IsGroupSelected() and not (TS.instanceof(unit, UnitsGroup)) then
-					Selection:ClearSelectedUnits()
-				end
-				unit:Select(SelectionType.Selected)
-				Selection.selectedUnits[unit] = true
-				-- Selection.groupSelected = false;
-			end
+			unit:Select(SelectionType.Selected)
+			Selection.selectedUnits[unit] = true
 		end
 	end
 	function Selection:DeselectUnits(units)
@@ -196,20 +174,9 @@ do
 			_selectedUnits[_unit] = nil
 			-- ▲ Set.delete ▲
 			local deleted = _valueExisted
-			-- if (deleted && unit instanceof UnitsGroup) {
-			-- Selection.groupSelected = false;
-			-- }
 		end
 		for _v in _units do
 			_arg0(_v, _v, _units)
-		end
-	end
-	function Selection:IsGroupSelected()
-		for unit in Selection.selectedUnits do
-			if TS.instanceof(unit, UnitsGroup) then
-				return unit
-			end
-			break
 		end
 	end
 	Selection.selectionType = SelectionMethod.None

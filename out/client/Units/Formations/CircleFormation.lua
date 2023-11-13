@@ -2,6 +2,7 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local Formation = TS.import(script, script.Parent, "Formation").default
+local Utils = TS.import(script, script.Parent.Parent.Parent, "Utils").default
 local camera = Workspace.CurrentCamera
 local CircleFormation
 do
@@ -52,7 +53,18 @@ do
 				local _arg0 = CFrame.Angles(0, math.rad(rotation) + math.pi, 0)
 				local _cFrame = CFrame.new(0, 0, -spread)
 				local cframe = _mainCFrame * _arg0 * _cFrame
-				table.insert(cframes, cframe)
+				local _fn = Utils
+				local _position = cframe.Position
+				local _vector3 = Vector3.new(0, 10, 0)
+				local groundPositionResult = _fn:RaycastBottom(_position + _vector3, { Workspace.TerrainParts }, Enum.RaycastFilterType.Include)
+				if not groundPositionResult then
+					continue
+				end
+				local orientation = { cframe:ToOrientation() }
+				local _cFrame_1 = CFrame.new(groundPositionResult.Position)
+				local _arg0_1 = CFrame.Angles(orientation[1], orientation[2], orientation[3])
+				local finalCFrame = _cFrame_1 * _arg0_1
+				table.insert(cframes, finalCFrame)
 			end
 		end
 		return cframes

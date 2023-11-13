@@ -3,6 +3,7 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local ReplicatedFirst = _services.ReplicatedFirst
 local Workspace = _services.Workspace
+local Utils = TS.import(script, script.Parent.Parent.Parent, "Utils").default
 local camera = Workspace.CurrentCamera
 local Formation
 do
@@ -39,6 +40,8 @@ do
 				continue
 			end
 			matchedUnitsToCFrames[unit] = cframe
+			visitedUnits[unit] = true
+			visitedCFrames[cframe] = true
 		end
 		return matchedUnitsToCFrames
 	end
@@ -64,7 +67,20 @@ do
 		local _arg0 = function(cframe)
 			local positionPart = self.circle.Middle:Clone()
 			positionPart.Transparency = 0
-			positionPart:PivotTo(cframe)
+			local _fn = Utils
+			local _position = cframe.Position
+			local _vector3 = Vector3.new(0, 100, 0)
+			local groundPositionResult = _fn:RaycastBottom(_position + _vector3, { Workspace.TerrainParts }, Enum.RaycastFilterType.Include)
+			if not groundPositionResult then
+				return nil
+			end
+			local _fn_1 = positionPart
+			local _exp = groundPositionResult.Position
+			local _position_1 = groundPositionResult.Position
+			local _normal = groundPositionResult.Normal
+			local _cFrame_1 = CFrame.new(_exp, _position_1 + _normal)
+			local _arg0_1 = CFrame.Angles(math.pi / 2, 0, 0)
+			_fn_1:PivotTo(_cFrame_1 * _arg0_1)
 			positionPart.Parent = self.circle.Positions
 		end
 		for _k, _v in matchedCframes do

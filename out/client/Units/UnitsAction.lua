@@ -7,7 +7,6 @@ local Utils = TS.import(script, script.Parent.Parent, "Utils").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
 local Selection = TS.import(script, script.Parent, "Selection").default
 local LineFormation = TS.import(script, script.Parent, "Formations", "LineFormation").default
-local GroupFormation = TS.import(script, script.Parent, "Formations", "GroupFormation").default
 local camera = Workspace.CurrentCamera
 local UnitsAction
 do
@@ -26,12 +25,6 @@ do
 			-- ▲ ReadonlySet.size ▲
 			if _size == 0 then
 				return nil
-			end
-			local groupSelected = Selection:IsGroupSelected()
-			if groupSelected then
-				UnitsAction:SetFormation(GroupFormation.new(groupSelected))
-			else
-				UnitsAction:SetFormation(LineFormation.new())
 			end
 			endCallback = UnitsAction:GetActionCFrame(units, function(cframe, spread)
 				UnitsAction:MoveUnits(units, cframe, spread)
@@ -81,7 +74,7 @@ do
 			return nil
 		end
 		if state then
-			local mouseHitResult = Utils:GetMouseHit()
+			local mouseHitResult = Utils:GetMouseHit({ Workspace.TerrainParts, Workspace.Terrain }, Enum.RaycastFilterType.Include)
 			if not mouseHitResult then
 				return nil
 			end
@@ -95,7 +88,7 @@ do
 		UnitsAction.enabled = state
 	end
 	function UnitsAction:Update()
-		local mouseHitResult = Utils:GetMouseHit()
+		local mouseHitResult = Utils:GetMouseHit({ Workspace.TerrainParts, Workspace.Terrain }, Enum.RaycastFilterType.Include)
 		if not mouseHitResult then
 			return nil
 		end
@@ -104,20 +97,32 @@ do
 		local arrowLength = (groundedMousePosition - _startPosition).Magnitude
 		local spread = math.clamp(arrowLength, UnitsAction.spreadLimits[1], UnitsAction.spreadLimits[2])
 		UnitsAction.spread = spread
-		-- if (UnitsAction.startPosition === mouseHitResult.Position) {
-		-- let medianPosition = new Vector3();
-		-- UnitsAction.units.forEach((unit) => {
-		-- medianPosition = medianPosition.add(unit.model.GetPivot().Position);
-		-- });
-		-- medianPosition = medianPosition.div(UnitsAction.units.size());
-		-- const groundedMedianPosition = new Vector3(medianPosition.X, UnitsAction.startPosition.Y, medianPosition.Z);
-		-- UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMedianPosition).mul(
-		-- CFrame.Angles(0, math.pi, 0),
-		-- );
-		-- } else {
-		-- UnitsAction.cframe = new CFrame(UnitsAction.startPosition, groundedMousePosition);
-		-- }
-		UnitsAction.cframe = CFrame.new(UnitsAction.startPosition, groundedMousePosition)
+		if UnitsAction.startPosition == mouseHitResult.Position then
+			local medianPosition = Vector3.new()
+			local _units = UnitsAction.units
+			local _arg0 = function(unit)
+				local _medianPosition = medianPosition
+				local _arg0_1 = unit:GetPosition()
+				medianPosition = _medianPosition + _arg0_1
+			end
+			for _v in _units do
+				_arg0(_v, _v, _units)
+			end
+			local _medianPosition = medianPosition
+			-- ▼ ReadonlySet.size ▼
+			local _size = 0
+			for _ in UnitsAction.units do
+				_size += 1
+			end
+			-- ▲ ReadonlySet.size ▲
+			medianPosition = _medianPosition / _size
+			local groundedMedianPosition = Vector3.new(medianPosition.X, UnitsAction.startPosition.Y, medianPosition.Z)
+			local _cFrame = CFrame.new(UnitsAction.startPosition, groundedMedianPosition)
+			local _arg0_1 = CFrame.Angles(0, math.pi, 0)
+			UnitsAction.cframe = _cFrame * _arg0_1
+		else
+			UnitsAction.cframe = CFrame.new(UnitsAction.startPosition, groundedMousePosition)
+		end
 		UnitsAction.formationSelected:VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread)
 	end
 	UnitsAction.MoveUnits = TS.async(function(self, units, cframe, spread)

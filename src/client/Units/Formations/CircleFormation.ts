@@ -19,7 +19,19 @@ export default class CircleFormation extends Formation {
 				.mul(CFrame.Angles(0, math.rad(rotation) + math.pi, 0))
 				.mul(new CFrame(0, 0, -spread));
 
-			cframes.push(cframe);
+			const groundPositionResult = Utils.RaycastBottom(
+				cframe.Position.add(new Vector3(0, 10, 0)),
+				[Workspace.TerrainParts],
+				Enum.RaycastFilterType.Include,
+			);
+			if (!groundPositionResult) continue;
+
+			const orientation = cframe.ToOrientation();
+			const finalCFrame = new CFrame(groundPositionResult.Position).mul(
+				CFrame.Angles(orientation[0], orientation[1], orientation[2]),
+			);
+
+			cframes.push(finalCFrame);
 		}
 
 		return cframes;

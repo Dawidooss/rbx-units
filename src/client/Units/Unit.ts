@@ -1,7 +1,6 @@
 import { PathfindingService, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
 import Pathfinding from "client/Pathfinding";
 import Selectable, { SelectionCirle, SelectionType } from "./Selectable";
-import UnitsGroup from "./UnitsGroup";
 
 export default class Unit extends Selectable {
 	public id: string;
@@ -10,7 +9,6 @@ export default class Unit extends Selectable {
 	public pathfinding: Pathfinding;
 	public alignOrientation: AlignOrientation;
 	public groundAttachment: Attachment;
-	public group: UnitsGroup | undefined;
 
 	public selectionType = SelectionType.None;
 	public selectionRadius = 1.5;

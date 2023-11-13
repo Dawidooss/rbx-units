@@ -5,6 +5,8 @@ local HttpService = _services.HttpService
 local PathfindingService = _services.PathfindingService
 local ReplicatedFirst = _services.ReplicatedFirst
 local RunService = _services.RunService
+local Workspace = _services.Workspace
+local Utils = TS.import(script, script.Parent, "Utils").default
 local agentParams = {
 	AgentCanJump = false,
 	WaypointSpacing = math.huge,
@@ -179,7 +181,20 @@ do
 				local _position = waypoint.Position
 				local toTargetCFrameDistance = (_worldPosition - _position).Magnitude
 				local visualisationPart = self.visualisationPart:Clone()
-				visualisationPart:PivotTo(CFrame.new(waypoint.Position, previousVisualisationAtt.WorldPosition))
+				local _fn = Utils
+				local _position_1 = waypoint.Position
+				local _vector3 = Vector3.new(0, 100, 0)
+				local groundPositionResult = _fn:RaycastBottom(_position_1 + _vector3, { Workspace.TerrainParts }, Enum.RaycastFilterType.Include)
+				if not groundPositionResult then
+					continue
+				end
+				local _exp = groundPositionResult.Position
+				local _position_2 = groundPositionResult.Position
+				local _normal = groundPositionResult.Normal
+				local _cFrame = CFrame.new(_exp, _position_2 + _normal)
+				local _arg0 = CFrame.Angles(math.pi / 2, 0, 0)
+				local cframe = _cFrame * _arg0
+				visualisationPart:PivotTo(cframe)
 				visualisationPart.Beam.Attachment1 = previousVisualisationAtt
 				visualisationPart.Beam.TextureLength = toTargetCFrameDistance
 				visualisationPart.Name = self.pathId .. ("#" .. tostring(waypointIndex))

@@ -4,7 +4,7 @@ import UnitsManager from "./UnitsManager";
 import Input from "../Input";
 import HUD from "./HUD";
 import Selectable, { SelectionType } from "./Selectable";
-import UnitsGroup from "./UnitsGroup";
+import Utils from "client/Utils";
 
 const player = Players.LocalPlayer;
 const playerGui = player.WaitForChild("PlayerGui") as PlayerGui;
@@ -78,25 +78,15 @@ export default abstract class Selection {
 					screenPosition.Y <=
 						HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2)
 				) {
-					if (unit.group) {
-						units.clear();
-						units.add(unit.group);
-						break;
-					}
 					units.add(unit);
 				}
 			}
 		} else if (Selection.selectionType === SelectionMethod.Single) {
-			const mouseLocation = UserInputService.GetMouseLocation();
-			const mouseRay = camera.ViewportPointToRay(mouseLocation.X, mouseLocation.Y);
-
-			const result = Workspace.Raycast(mouseRay.Origin, mouseRay.Direction.mul(10000));
+			const result = Utils.GetMouseHit();
 			if (!result || !result.Instance) return units;
 
 			const unit = UnitsManager.GetUnit(result.Instance.Parent?.Name || "");
 			if (!unit) return units;
-
-			units.add(unit.group || unit);
 		}
 
 		return units;
@@ -153,22 +143,8 @@ export default abstract class Selection {
 			if (this.selectedUnits.size() >= 100) return;
 			if (this.selectedUnits.has(unit)) return;
 
-			if (unit instanceof UnitsGroup) {
-				Selection.ClearSelectedUnits();
-
-				unit.Select(SelectionType.Selected);
-				Selection.selectedUnits.add(unit);
-				// Selection.groupSelected = true;
-				return; // only 1 selected group allowed
-			} else {
-				if (Selection.IsGroupSelected() && !(unit instanceof UnitsGroup)) {
-					Selection.ClearSelectedUnits();
-				}
-
-				unit.Select(SelectionType.Selected);
-				Selection.selectedUnits.add(unit);
-				// Selection.groupSelected = false;
-			}
+			unit.Select(SelectionType.Selected);
+			Selection.selectedUnits.add(unit);
 		}
 	}
 
@@ -176,19 +152,6 @@ export default abstract class Selection {
 		units.forEach((unit) => {
 			unit.Select(SelectionType.None);
 			const deleted = Selection.selectedUnits.delete(unit);
-
-			// if (deleted && unit instanceof UnitsGroup) {
-			// 	Selection.groupSelected = false;
-			// }
 		});
-	}
-
-	public static IsGroupSelected(): UnitsGroup | undefined {
-		for (const unit of Selection.selectedUnits) {
-			if (unit instanceof UnitsGroup) {
-				return unit;
-			}
-			break;
-		}
 	}
 }

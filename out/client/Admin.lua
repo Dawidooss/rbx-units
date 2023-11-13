@@ -16,7 +16,7 @@ do
 		end)
 	end
 	function Admin:SpawnUnit()
-		local mouseHitResult = Utils:GetMouseHit()
+		local mouseHitResult = Utils:GetMouseHit({ UnitsManager.cache })
 		local _result = mouseHitResult
 		if _result ~= nil then
 			_result = _result.Position
