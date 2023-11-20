@@ -1,4 +1,4 @@
-import Network from "shared/Network";
+import Network from "shared/NetworkBase";
 import Unit from "./Unit";
 import { HttpService, Workspace } from "@rbxts/services";
 

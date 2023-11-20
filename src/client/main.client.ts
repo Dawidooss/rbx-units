@@ -7,6 +7,9 @@ import Admin from "./Admin";
 import UnitsAction from "./Units/UnitsAction";
 import HUDHandler from "./Units/HUDHandler";
 import HUD from "./Units/HUD";
+import GameStore from "shared/Game/GameStore";
+
+const gameStore = new GameStore();
 
 HUD.Init();
 HUDHandler.Init();

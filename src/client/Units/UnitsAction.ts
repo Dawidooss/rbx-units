@@ -5,7 +5,6 @@ import Formation from "./Formations/Formation";
 import Input from "client/Input";
 import Selection from "./Selection";
 import LineFormation from "./Formations/LineFormation";
-import UnitsManager from "./UnitsManager";
 
 const camera = Workspace.CurrentCamera!;
 
