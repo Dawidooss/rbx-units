@@ -1,51 +1,66 @@
 import Squash from "@rbxts/squash";
 import GameStore from "./GameStore";
-import UnitsCache from "./UnitsCache";
 import { UnitData } from "./UnitData";
 
+const gameStore = GameStore.Get();
+
 export default class TeamStore {
-	public details: TeamDetails;
 	public id: string;
-
+	public name: string;
 	public players = new Set<Player>();
-	public units = new UnitsCache(this);
 
-	public constructor(id: string, teamDetails?: TeamDetails) {
-		this.id = id;
-		this.details = teamDetails || new TeamDetails();
+	public constructor(teamParameters: TeamParameters) {
+		this.id = teamParameters.id;
+		this.name = teamParameters.name;
+
+		if (teamParameters.players) {
+			for (const player of teamParameters.players) {
+				this.AssignPlayer(player);
+			}
+		}
 	}
 
-	public AddPlayer(player: Player) {
+	public AssignPlayer(player: Player) {
+		gameStore.players.set(player, this);
 		this.players.add(player);
 	}
 
-	public Serialize(): SerializedUnitParameters {
+	public RemovePlayer(player: Player) {
+		gameStore.players.delete(player);
+		this.players.delete(player);
+	}
+
+	public Serialize(): SerializedTeamParameters {
+		const playersArray = [];
+		for (const player of this.players) {
+			playersArray.push(player);
+		}
+
 		return {
-			position: Squash.Vector3.ser(this.position),
-			targetPosition: Squash.Vector3.ser(this.targetPosition),
-			teamId: Squash.string.ser(this.team.id),
 			id: Squash.string.ser(this.id),
+			name: Squash.string.ser(this.name),
+			players: playersArray,
 		};
 	}
 
-	public static FromSerialized(data: SerializedUnitParameters) {
-		const teamId = Squash.string.des(data.teamId);
-		const team = GameStore.Get().teams.GetTeam(teamId);
+	public static FromSerialized(data: SerializedTeamParameters) {
+		const teamParameters = {
+			id: Squash.string.des(data.id),
+			name: Squash.string.des(data.name),
+			players: new Set<Player>(data.players),
+		} as TeamParameters;
 
-		const deserializedData = {
-			position: Squash.Vector3.des(data.position),
-			targetPosition: Squash.Vector3.des(data.targetPosition),
-			id: Squash.string.des(data.targetPosition),
-			team: team,
-		} as UnitParameters;
-
-		return new UnitData(deserializedData);
+		return new TeamStore(teamParameters);
 	}
 }
 
 export type TeamParameters = {
-	players: Set<Player>;
-	units: UnitsCache();
+	id: string;
+	name: string;
+	players?: Set<Player>;
 };
-
-export type SerializedTeamParameters = {};
+export type SerializedTeamParameters = {
+	id: string;
+	name: string;
+	players: Player[];
+};

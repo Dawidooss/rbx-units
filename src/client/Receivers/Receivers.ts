@@ -1,29 +1,37 @@
-import GameStore from "../../shared/Game/GameStore";
+import { number } from "@rbxts/squash";
 import ReceiverBase from "./ReceiverBase";
 import UnitsReceiver from "./UnitsReceiver";
+import TeamsReceiver from "./TeamsReceiver";
 
 export default class Receivers {
 	private static instance: Receivers;
-	public replicators = new Map<string, ReceiverBase>();
+	public receivers = new Array<ReceiverBase>();
 
 	constructor() {
 		Receivers.instance = this;
 
-		this.AddReplicator(new UnitsReceiver());
+		this.AddReceiver(new TeamsReceiver());
+		this.AddReceiver(new UnitsReceiver());
+
+		this.FetchAll();
 	}
 
-	public AddReplicator(replicator: ReceiverBase) {
-		this.replicators.set(replicator.type, replicator);
+	public AddReceiver(receiver: ReceiverBase) {
+		this.receivers.push(receiver);
 	}
 
 	public FetchAll() {
-		for (const [_, replicator] of this.replicators) {
-			replicator.FetchAll();
+		for (const receiver of this.receivers) {
+			receiver.FetchAll();
 		}
 	}
 
-	public GetReplicator(type: string) {
-		return this.replicators.get(type);
+	public GetReceiver(type: string) {
+		for (const receiver of this.receivers) {
+			if (receiver.type === type) {
+				return receiver;
+			}
+		}
 	}
 
 	public static Get() {

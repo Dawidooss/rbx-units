@@ -26,11 +26,11 @@ export class UnitData {
 
 	public static FromSerialized(data: SerializedUnitParameters) {
 		const teamId = Squash.string.des(data.teamId);
-		const team = GameStore.Get().teams.GetTeam(teamId);
+		const team = GameStore.Get().teams.get(teamId);
 
 		if (!team) {
 			// Receivers.Get().GetReplicator("Teams")?.FetchAll();
-			const team = GameStore.Get().teams.GetTeam(teamId);
+			const team = GameStore.Get().teams.get(teamId);
 			assert(team, `Team with id: ${teamId} doesn't exist and cannot be fetched.`);
 		}
 

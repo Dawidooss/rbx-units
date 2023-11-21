@@ -17,9 +17,9 @@ export default class UnitsReceiver implements ReceiverBase {
 			},
 		});
 
-		Network.BindFunctions({
-			[this.type]: (player: Player, unitType: any, position: any) => {},
-		});
+		// Network.BindFunctions({
+		// 	[this.type]: (player: Player, unitType: any, position: any) => {},
+		// });
 	}
 
 	public FetchAll() {
