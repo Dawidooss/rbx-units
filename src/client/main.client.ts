@@ -7,11 +7,6 @@ import Admin from "./Admin";
 import UnitsAction from "./Units/UnitsAction";
 import HUDHandler from "./Units/HUDHandler";
 import HUD from "./Units/HUD";
-import GameStore from "shared/Game/GameStore";
-import Receivers from "./Receivers/Receivers";
-
-const gameStore = GameStore.Get();
-const receivers = Receivers.Get();
 
 HUD.Init();
 HUDHandler.Init();
