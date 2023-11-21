@@ -9,6 +9,7 @@ local Admin = TS.import(script, script.Parent, "Admin").default
 local UnitsAction = TS.import(script, script.Parent, "Units", "UnitsAction").default
 local HUDHandler = TS.import(script, script.Parent, "Units", "HUDHandler").default
 local HUD = TS.import(script, script.Parent, "Units", "HUD").default
+local GameStore = TS.import(script, script.Parent, "Stores", "GameStore").default
 HUD:Init()
 HUDHandler:Init()
 Selection:Init()
@@ -17,6 +18,7 @@ Movement:Init()
 Input:Init()
 Admin:Init()
 UnitsAction:Init()
+local gameStore = GameStore:Get()
 RunService.RenderStepped:Connect(function(deltaTime)
 	Movement:Update(deltaTime)
 end)

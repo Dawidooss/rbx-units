@@ -1,6 +1,7 @@
 import Squash from "@rbxts/squash";
 import GameStore from "./GameStore";
 import Store from "./Store";
+import { SerializedTeamData, TeamData } from "types";
 
 export default class TeamsStore extends Store {
 	public name = script.Name;
@@ -10,7 +11,7 @@ export default class TeamsStore extends Store {
 	constructor(gameStore: GameStore) {
 		super(gameStore);
 
-		this.replicator.Connect("team-added", (serializedTeamData: SerializedTeamData) => {
+		this.receiver.Connect("team-added", (serializedTeamData: SerializedTeamData) => {
 			const teamData = TeamsStore.DeserializeTeamData(serializedTeamData);
 			this.AddTeam(teamData);
 		});
@@ -52,15 +53,3 @@ export default class TeamsStore extends Store {
 		};
 	}
 }
-
-export type TeamData = {
-	name: string;
-	id: string;
-	color: Color3;
-};
-
-export type SerializedTeamData = {
-	name: string;
-	id: string;
-	color: string;
-};

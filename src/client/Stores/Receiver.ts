@@ -1,7 +1,7 @@
 import Network from "shared/Network";
 import GameStore from "./GameStore";
 
-export default class Replicator {
+export default class Receiver {
 	public gameStore: GameStore;
 
 	constructor(gameStore: GameStore) {

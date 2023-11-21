@@ -7,6 +7,7 @@ import Admin from "./Admin";
 import UnitsAction from "./Units/UnitsAction";
 import HUDHandler from "./Units/HUDHandler";
 import HUD from "./Units/HUD";
+import GameStore from "./Stores/GameStore";
 
 HUD.Init();
 HUDHandler.Init();
@@ -16,6 +17,8 @@ Movement.Init();
 Input.Init();
 Admin.Init();
 UnitsAction.Init();
+
+const gameStore = GameStore.Get();
 
 RunService.RenderStepped.Connect((deltaTime) => {
 	Movement.Update(deltaTime);

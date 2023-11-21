@@ -1,4 +1,4 @@
-import Network from "shared/NetworkBase";
+import Network from "shared/Network";
 import Unit from "./Unit";
 import { HttpService, Workspace } from "@rbxts/services";
 
@@ -10,10 +10,6 @@ export default class UnitsManager {
 
 	public static Init() {
 		UnitsManager.cache.Name = "UnitsCache";
-
-		Network.BindFunctions({
-			createUnit: (unitType, unitId, position) => UnitsManager.CreateUnit(unitType, unitId, position),
-		});
 	}
 
 	public static GenerateUnitId(): string {

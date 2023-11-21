@@ -1,6 +1,5 @@
 -- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local Network = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Network")
 local Unit = TS.import(script, script.Parent, "Unit").default
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local HttpService = _services.HttpService
@@ -22,11 +21,6 @@ do
 	end
 	function UnitsManager:Init()
 		UnitsManager.cache.Name = "UnitsCache"
-		Network:BindFunctions({
-			createUnit = function(unitType, unitId, position)
-				return UnitsManager:CreateUnit(unitType, unitId, position)
-			end,
-		})
 	end
 	function UnitsManager:GenerateUnitId()
 		return HttpService:GenerateGUID(false)
