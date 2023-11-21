@@ -1,7 +1,7 @@
 -- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local Receiver = TS.import(script, script.Parent, "Receiver").default
 local TeamsStore = TS.import(script, script.Parent, "TeamsStore").default
+local Replicator = TS.import(script, script.Parent, "Replicator").default
 local GameStore
 do
 	GameStore = setmetatable({}, {
@@ -16,13 +16,13 @@ do
 	end
 	function GameStore:constructor()
 		self.stores = {}
-		self.receiver = Receiver.new(self)
+		self.replicator = Replicator.new(self)
 		if GameStore.instance then
 			return nil
 		end
 		GameStore.instance = self
 		self:AddStore(TeamsStore.new(self))
-		self.receiver:FetchAll()
+		self.replicator:FetchAll()
 	end
 	function GameStore:AddStore(store)
 		local _stores = self.stores

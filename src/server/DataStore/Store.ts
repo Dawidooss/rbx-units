@@ -1,18 +1,18 @@
 import Signal from "@rbxts/signal";
 import GameStore from "./GameStore";
-import Receiver from "./Receiver";
+import Replicator from "./Replicator";
 
 export default abstract class Store {
 	public name: string = "Store";
 	public gameStore: GameStore;
-	public receiver: Receiver;
+	public replicator: Replicator;
 	public dataChanged: Signal;
 
 	protected replicable = true;
 
 	constructor(gameStore: GameStore) {
 		this.gameStore = gameStore;
-		this.receiver = gameStore.receiver;
+		this.replicator = gameStore.replicator;
 		this.dataChanged = new Signal();
 	}
 
@@ -20,8 +20,8 @@ export default abstract class Store {
 		this.replicable = replicable;
 	}
 
-	public DataMissmatch() {
-		this.receiver.FetchAll();
+	protected DataMissmatch() {
+		this.replicator.FetchAll();
 	}
 
 	abstract OverrideData(data: any): void;

@@ -8,6 +8,7 @@ import UnitsAction from "./Units/UnitsAction";
 import HUDHandler from "./Units/HUDHandler";
 import HUD from "./Units/HUD";
 import GameStore from "./Stores/GameStore";
+import TeamsStore from "./Stores/ClientTeamsStore";
 
 HUD.Init();
 HUDHandler.Init();
@@ -23,3 +24,7 @@ const gameStore = GameStore.Get();
 RunService.RenderStepped.Connect((deltaTime) => {
 	Movement.Update(deltaTime);
 });
+
+wait(10);
+const teamStore = gameStore.GetStore("TeamsStore") as TeamsStore;
+print(teamStore.teams);

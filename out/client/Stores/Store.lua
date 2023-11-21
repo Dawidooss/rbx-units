@@ -8,14 +8,14 @@ do
 		self.name = "Store"
 		self.replicable = true
 		self.gameStore = gameStore
-		self.receiver = gameStore.receiver
+		self.replicator = gameStore.replicator
 		self.dataChanged = Signal.new()
 	end
 	function Store:SetReplicable(replicable)
 		self.replicable = replicable
 	end
 	function Store:DataMissmatch()
-		self.receiver:FetchAll()
+		self.replicator:FetchAll()
 	end
 end
 return {

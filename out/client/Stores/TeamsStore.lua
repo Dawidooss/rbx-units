@@ -20,7 +20,7 @@ do
 		super.constructor(self, gameStore)
 		self.name = script.Name
 		self.teams = {}
-		self.receiver:Connect("team-added", function(serializedTeamData)
+		self.replicator:Connect("team-added", function(serializedTeamData)
 			local teamData = TeamsStore:DeserializeTeamData(serializedTeamData)
 			self:AddTeam(teamData)
 		end)

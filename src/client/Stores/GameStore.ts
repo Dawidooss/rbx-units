@@ -1,10 +1,10 @@
-import Receiver from "./Receiver";
-import Store from "./Store";
-import TeamsStore from "./TeamsStore";
+import Store from "./ClientStore";
+import TeamsStore from "./ClientTeamsStore";
+import Replicator from "./Replicator";
 
 export default class GameStore {
 	private stores = new Map<string, Store>();
-	public receiver = new Receiver(this);
+	public replicator = new Replicator(this);
 
 	private static instance: GameStore;
 	constructor() {
@@ -14,7 +14,7 @@ export default class GameStore {
 
 		this.AddStore(new TeamsStore(this));
 
-		this.receiver.FetchAll();
+		this.replicator.FetchAll();
 	}
 
 	private AddStore(store: Store) {

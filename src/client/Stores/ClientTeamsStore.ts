@@ -1,17 +1,22 @@
 import Squash from "@rbxts/squash";
 import GameStore from "./GameStore";
-import Store from "./Store";
 import { SerializedTeamData, TeamData } from "types";
+import TeamsStore from "shared/TeamStore";
+import Replicator from "./Replicator";
 
-export default class TeamsStore extends Store {
-	public name = script.Name;
+export default class ClientTeamsStore extends TeamsStore {
+	public gameStore: GameStore;
+	public replicator: Replicator;
 
 	public teams = new Map<string, TeamData>();
 
 	constructor(gameStore: GameStore) {
-		super(gameStore);
+		super();
 
-		this.receiver.Connect("team-added", (serializedTeamData: SerializedTeamData) => {
+		this.gameStore = gameStore;
+		this.replicator = gameStore.replicator;
+
+		this.replicator.Connect("team-added", (serializedTeamData: SerializedTeamData) => {
 			const teamData = TeamsStore.DeserializeTeamData(serializedTeamData);
 			this.AddTeam(teamData);
 		});
@@ -25,6 +30,10 @@ export default class TeamsStore extends Store {
 		}
 
 		this.teams.set(teamData.id, teamData);
+	}
+
+	public DataMissmatch() {
+		this.replicator.FetchAll();
 	}
 
 	public OverrideData(serializedTeamDatas: SerializedTeamData[]) {
