@@ -1,5 +1,5 @@
 import { PathfindingService, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
-import Pathfinding from "client/Pathfinding";
+import Pathfinding from "client/Units/Pathfinding";
 import Selectable, { SelectionCirle, SelectionType } from "./Selectable";
 
 export default class Unit extends Selectable {

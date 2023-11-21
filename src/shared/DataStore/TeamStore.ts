@@ -1,39 +1,32 @@
 import Squash from "@rbxts/squash";
-import Store from "./Store";
 import { SerializedTeamData, TeamData } from "types";
+import Store from "./Store";
 
 export default class TeamsStore extends Store {
 	public name = script.Name;
-
 	public teams = new Map<string, TeamData>();
-
-	constructor(gameStore: ``) {
-		super(gameStore);
-
-		this.replicator.Connect("team-added", (serializedTeamData: SerializedTeamData) => {
-			const teamData = TeamsStore.DeserializeTeamData(serializedTeamData);
-			this.AddTeam(teamData);
-		});
-	}
 
 	public AddTeam(teamData: TeamData) {
 		const teamId = teamData.id;
-		if (this.teams.has(teamId)) {
-			this.DataMissmatch();
-			return;
-		}
-
-		this.teams.set(teamData.id, teamData);
+		this.teams.set(teamId, teamData);
 	}
 
 	public OverrideData(serializedTeamDatas: SerializedTeamData[]) {
 		this.teams.clear();
 
-		let teamDatas: TeamData[] = [];
 		for (const serializedTeamData of serializedTeamDatas) {
 			const teamData = TeamsStore.DeserializeTeamData(serializedTeamData);
 			this.AddTeam(teamData);
 		}
+	}
+
+	public Serialize(): SerializedTeamData[] {
+		let serializedTeamDatas = []
+		for (const [_, team] of this.teams) {
+			serializedTeamDatas.push(TeamsStore.SerializeTeamData(team))
+		}
+
+		return serializedTeamDatas
 	}
 
 	public static SerializeTeamData(teamData: TeamData): SerializedTeamData {

@@ -1,5 +1,7 @@
 import { Players } from "@rbxts/services";
-import Network from "shared/Network";
+import ServerGameStore from "./DataStore/GameStore";
+
+const gameStore = ServerGameStore.Get()
 
 Players.PlayerAdded.Connect((player) => {
 	player.CharacterAdded.Connect((character) => {
@@ -10,5 +12,3 @@ Players.PlayerAdded.Connect((player) => {
 		humanoid.WalkSpeed = 0;
 	});
 });
-
-Network.BindFunctions({});

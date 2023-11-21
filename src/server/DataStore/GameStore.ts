@@ -1,19 +1,31 @@
-import Network from "shared/Network";
-import Replicator from "./Replicators/Replicator";
+import GameStore from "shared/DataStore/GameStore";
+import Replicator from "./Replicator";
+import Store from "shared/DataStore/Store";
 
-export default class GameStore {
-	private static instance: GameStore;
+export default class ServerGameStore extends GameStore {
+	public replicator = new Replicator(this);
 
-	public static stores = new Map<string, Store>();
-	public replicators: Replicator[] = [];
-
+	private static instance: ServerGameStore;
 	constructor() {
-		if (GameStore.instance) return;
+		super()
+		if (ServerGameStore.instance) return;
+		ServerGameStore.instance = this;
+		print('server replicator initialization')
 
-		GameStore.instance = this;
+		this.replicator.Connect("fetch-all", (player: Player) => {
+			const serializedStores = new Map<string, Store>();
+
+			print('OnServerInvoke fetch-data')
+
+			for (const [storeName, store] of this.stores) {
+				serializedStores.set(storeName, store.Serialize())
+			}
+
+			return serializedStores
+		})
 	}
 
-	public Get() {
-		return GameStore.instance || new GameStore();
+	public static Get() {
+		return ServerGameStore.instance || new ServerGameStore();
 	}
 }

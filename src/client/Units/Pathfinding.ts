@@ -6,8 +6,8 @@ import {
 	RunService,
 	Workspace,
 } from "@rbxts/services";
-import Unit from "./Units/Unit";
-import Utils from "./Utils";
+import Unit from "./Unit";
+import Utils from "../Utils";
 
 const agentParams = {
 	AgentCanJump: false,

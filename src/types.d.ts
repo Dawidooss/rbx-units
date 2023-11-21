@@ -9,3 +9,16 @@ export type SerializedTeamData = {
 	id: string;
 	color: string;
 };
+
+export type ServerResponse = {
+	status: string;
+	data?: any;
+} & (
+	| {
+			error: false;
+	  }
+	| {
+			error: true;
+			errorMessage: string;
+	  }
+);

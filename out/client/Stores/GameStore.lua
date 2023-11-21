@@ -1,44 +1,36 @@
 -- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local TeamsStore = TS.import(script, script.Parent, "TeamsStore").default
+local GameStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "GameStore").default
 local Replicator = TS.import(script, script.Parent, "Replicator").default
-local GameStore
+local ClientTeamsStore = TS.import(script, script.Parent, "ClientTeamsStore").default
+local ClientGameStore
 do
-	GameStore = setmetatable({}, {
+	local super = GameStore
+	ClientGameStore = setmetatable({}, {
 		__tostring = function()
-			return "GameStore"
+			return "ClientGameStore"
 		end,
+		__index = super,
 	})
-	GameStore.__index = GameStore
-	function GameStore.new(...)
-		local self = setmetatable({}, GameStore)
+	ClientGameStore.__index = ClientGameStore
+	function ClientGameStore.new(...)
+		local self = setmetatable({}, ClientGameStore)
 		return self:constructor(...) or self
 	end
-	function GameStore:constructor()
-		self.stores = {}
+	function ClientGameStore:constructor()
+		super.constructor(self)
 		self.replicator = Replicator.new(self)
-		if GameStore.instance then
+		if ClientGameStore.instance then
 			return nil
 		end
-		GameStore.instance = self
-		self:AddStore(TeamsStore.new(self))
+		ClientGameStore.instance = self
+		self:AddStore(ClientTeamsStore.new(self))
 		self.replicator:FetchAll()
 	end
-	function GameStore:AddStore(store)
-		local _stores = self.stores
-		local _name = store.name
-		local _store = store
-		_stores[_name] = _store
-	end
-	function GameStore:GetStore(store)
-		local _stores = self.stores
-		local _store = store
-		return _stores[_store]
-	end
-	function GameStore:Get()
-		return GameStore.instance or GameStore.new()
+	function ClientGameStore:Get()
+		return ClientGameStore.instance or ClientGameStore.new()
 	end
 end
 return {
-	default = GameStore,
+	default = ClientGameStore,
 }

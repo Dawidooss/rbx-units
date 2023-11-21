@@ -3,11 +3,12 @@ import { SerializedTeamData, TeamData } from "types";
 import ClientGameStore from "./GameStore";
 import Replicator from "./Replicator";
 import TeamsStore from "shared/DataStore/TeamStore";
+import ServerGameStore from "./GameStore";
 
-export default class ClientTeamsStore extends TeamsStore {
+export default class ServerTeamsStore extends TeamsStore {
 	public replicator: Replicator;
 
-	constructor(gameStore: ClientGameStore) {
+	constructor(gameStore: ServerGameStore) {
 		super(gameStore);
 		this.replicator = gameStore.replicator;
 
