@@ -1,8 +1,9 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local ReplicatedFirst = _services.ReplicatedFirst
 local RunService = _services.RunService
+local Workspace = _services.Workspace
 local Pathfinding = TS.import(script, script.Parent, "Pathfinding").default
 local _Selectable = TS.import(script, script.Parent, "Selectable")
 local Selectable = _Selectable.default
@@ -21,15 +22,17 @@ do
 		local self = setmetatable({}, Unit)
 		return self:constructor(...) or self
 	end
-	function Unit:constructor(id, unitName, position)
-		super.constructor(self)
+	function Unit:constructor(unitData)
 		self.selectionType = SelectionType.None
 		self.selectionRadius = 1.5
-		self.id = id
-		self.unitName = unitName
-		self.model = ReplicatedFirst.Units[unitName]:Clone()
+		print("new unit")
+		super.constructor(self)
+		self.id = unitData.id
+		self.type = unitData.type
+		self.model = ReplicatedFirst.Units[self.type]:Clone()
 		self.model.Name = self.id
-		self.model:PivotTo(CFrame.new(position))
+		self.model:PivotTo(CFrame.new(unitData.position))
+		self.model.Parent = Workspace:WaitForChild("UnitsCache")
 		-- disabling not used humanoid states to save memory
 		-- this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.FallingDown, false);
 		-- this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false);

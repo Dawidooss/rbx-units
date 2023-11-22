@@ -1,8 +1,10 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local GameStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "GameStore").default
-local Replicator = TS.import(script, script.Parent, "Replicator").default
+local GameStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "GameStore").default
+local ClientReplicator = TS.import(script, script.Parent, "ClientReplicator").default
 local ClientTeamsStore = TS.import(script, script.Parent, "ClientTeamsStore").default
+local ClientPlayersStore = TS.import(script, script.Parent, "ClientPlayersStore").default
+local ClientUnitsStore = TS.import(script, script.Parent, "ClientUnitsStore").default
 local ClientGameStore
 do
 	local super = GameStore
@@ -19,12 +21,14 @@ do
 	end
 	function ClientGameStore:constructor()
 		super.constructor(self)
-		self.replicator = Replicator.new(self)
+		self.replicator = ClientReplicator.new(self)
 		if ClientGameStore.instance then
 			return nil
 		end
 		ClientGameStore.instance = self
 		self:AddStore(ClientTeamsStore.new(self))
+		self:AddStore(ClientPlayersStore.new(self))
+		self:AddStore(ClientUnitsStore.new(self))
 		self.replicator:FetchAll()
 	end
 	function ClientGameStore:Get()

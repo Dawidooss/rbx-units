@@ -1,9 +1,6 @@
-import Squash from "@rbxts/squash";
-import { SerializedTeamData, TeamData } from "types";
-import ClientGameStore from "./GameStore";
-import Replicator from "./Replicator";
-import TeamsStore from "shared/DataStore/TeamStore";
-import ServerGameStore from "./GameStore";
+import Replicator from "./ServerReplicator";
+import TeamsStore, { SerializedTeamData, TeamData } from "shared/DataStore/Stores/TeamStore";
+import ServerGameStore from "./ServerGameStore";
 
 export default class ServerTeamsStore extends TeamsStore {
 	public replicator: Replicator;
@@ -11,10 +8,17 @@ export default class ServerTeamsStore extends TeamsStore {
 	constructor(gameStore: ServerGameStore) {
 		super(gameStore);
 		this.replicator = gameStore.replicator;
+	}
 
-		this.replicator.Connect("team-added", (serializedTeamData: SerializedTeamData) => {
-			const teamData = TeamsStore.DeserializeTeamData(serializedTeamData);
-			this.AddTeam(teamData);
-		});
+	public AddTeam(teamData: TeamData): TeamData {
+		super.AddTeam(teamData);
+		this.replicator.ReplicateAll("team-created", this.Serialize(teamData));
+
+		return teamData;
+	}
+
+	public RemoveTeam(teamId: string): void {
+		super.RemoveTeam(teamId);
+		this.replicator.ReplicateAll("team-removed", teamId);
 	}
 }

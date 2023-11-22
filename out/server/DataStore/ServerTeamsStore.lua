@@ -1,6 +1,6 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local TeamsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "TeamStore").default
+local TeamsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "TeamStore").default
 local ServerTeamsStore
 do
 	local super = TeamsStore
@@ -18,10 +18,15 @@ do
 	function ServerTeamsStore:constructor(gameStore)
 		super.constructor(self, gameStore)
 		self.replicator = gameStore.replicator
-		self.replicator:Connect("team-added", function(serializedTeamData)
-			local teamData = TeamsStore:DeserializeTeamData(serializedTeamData)
-			self:AddTeam(teamData)
-		end)
+	end
+	function ServerTeamsStore:AddTeam(teamData)
+		super.AddTeam(self, teamData)
+		self.replicator:ReplicateAll("team-created", self:Serialize(teamData))
+		return teamData
+	end
+	function ServerTeamsStore:RemoveTeam(teamId)
+		super.RemoveTeam(self, teamId)
+		self.replicator:ReplicateAll("team-removed", teamId)
 	end
 end
 return {

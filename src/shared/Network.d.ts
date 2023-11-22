@@ -2,6 +2,8 @@
 // 	- The first return value of InvokeClient (but not InvokeServer) is bool success, which is false if the invocation timed out
 // 	  or the handler errored.
 
+import { ServerResponse } from "types";
+
 // 	- InvokeServer will error if it times out or the handler errors
 
 // 	- InvokeServer/InvokeClient do not return instantly on an error, but instead check for failure every 0.5 seconds. This is
@@ -17,15 +19,15 @@ interface Network {
 	BindEvents(events: { [key: string]: Callback }): void;
 
 	// **SERVER API**
-	FireClient(client: Player, name: string, ...args: any): void;
-	FireAllClients(name: string, ...args: any): void;
-	FireOtherClients(ignoreClient: Player, ...args: any): void;
+	FireClient(client: Player, name: string, response: ServerResponse): void;
+	FireAllClients(name: string, response: ServerResponse): void;
+	FireOtherClients(ignoreClient: Player, name: string, response: ServerResponse): void;
 
-	FireOtherClientsWithinDistance(ignoreClient: Player, distance: number, name: string, ...args: any): void; // prettier-ignore
-	FireAllClientsWithinDistance(position: Vector3, distance: number, name: string, ...args: any): void;
+	FireOtherClientsWithinDistance(ignoreClient: Player, distance: number, name: string, response: ServerResponse): void; // prettier-ignore
+	FireAllClientsWithinDistance(position: Vector3, distance: number, name: string, response: ServerResponse): void;
 
-	InvokeClient(client: Player, name: string, ...args: any): [...args: any];
-	InvokeClientWithTimeout(timeout: number, client: Player, name: string, ...args: any): [...args: any];
+	InvokeClient(client: Player, name: string, response: ServerResponse): [...args: any];
+	InvokeClientWithTimeout(timeout: number, client: Player, name: string, response: ServerResponse): [...args: any];
 
 	LogTraffic(duration: number): void;
 

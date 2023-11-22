@@ -1,7 +1,7 @@
 import { StarterGui, Workspace } from "@rbxts/services";
 import Formation from "./Formation";
 import Selectable from "../Selectable";
-import Utils from "client/Utils";
+import Utils from "shared/Utils";
 
 export default class SquareFormation extends Formation {
 	constructor() {

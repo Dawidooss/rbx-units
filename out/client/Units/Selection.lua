@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local ContextActionService = _services.ContextActionService
@@ -6,12 +6,12 @@ local Players = _services.Players
 local RunService = _services.RunService
 local UserInputService = _services.UserInputService
 local Workspace = _services.Workspace
-local guiInset = TS.import(script, script.Parent.Parent, "GuiInset").default
-local UnitsManager = TS.import(script, script.Parent, "UnitsManager").default
+local GetGuiInset = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "GuiInset").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
 local HUD = TS.import(script, script.Parent, "HUD").default
 local SelectionType = TS.import(script, script.Parent, "Selectable").SelectionType
-local Utils = TS.import(script, script.Parent.Parent, "Utils").default
+local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
+local ClientGameStore = TS.import(script, script.Parent.Parent, "DataStore", "ClientGameStore").default
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
@@ -28,6 +28,8 @@ do
 	SelectionMethod.None = 2
 	_inverse[2] = "None"
 end
+local gameStore = ClientGameStore:Get()
+local unitsStore = gameStore:GetStore("UnitsStore")
 local Selection
 do
 	Selection = {}
@@ -44,7 +46,7 @@ do
 	end
 	function Selection:SetHolding(state)
 		local _exp = UserInputService:GetMouseLocation()
-		local _vector2 = Vector2.new(0, guiInset)
+		local _vector2 = Vector2.new(0, GetGuiInset())
 		local mouseLocation = _exp - _vector2
 		Selection.holding = state
 		Selection.boxCornerPosition = Vector2.new(mouseLocation.X, mouseLocation.Y)
@@ -65,7 +67,7 @@ do
 	function Selection:FindHoveringUnits()
 		local units = {}
 		if Selection.selectionType == SelectionMethod.Box then
-			for _, unit in UnitsManager:GetUnits() do
+			for _, unit in unitsStore:GetUnitsInstances() do
 				local pivot = unit.model:GetPivot()
 				local screenPosition = (camera:WorldToScreenPoint(pivot.Position))
 				if screenPosition.X >= HUD.gui.SelectionBox.Position.X.Offset - math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.X <= HUD.gui.SelectionBox.Position.X.Offset + math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.Y >= HUD.gui.SelectionBox.Position.Y.Offset - math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2) and screenPosition.Y <= HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2))) then
@@ -77,7 +79,7 @@ do
 			if not result or not result.Instance then
 				return units
 			end
-			local _fn = UnitsManager
+			local _cache = unitsStore.cache
 			local _result = result.Instance.Parent
 			if _result ~= nil then
 				_result = _result.Name
@@ -86,7 +88,7 @@ do
 			if not (_condition ~= "" and _condition) then
 				_condition = ""
 			end
-			local unit = _fn:GetUnit(_condition)
+			local unit = _cache[_condition]
 			if not unit then
 				return units
 			end
@@ -95,7 +97,7 @@ do
 	end
 	function Selection:Update()
 		local _exp = UserInputService:GetMouseLocation()
-		local _vector2 = Vector2.new(0, guiInset)
+		local _vector2 = Vector2.new(0, GetGuiInset())
 		local mouseLocation = _exp - _vector2
 		local hoveringUnits = Selection:FindHoveringUnits()
 		local boxSize = Selection.boxCornerPosition - mouseLocation

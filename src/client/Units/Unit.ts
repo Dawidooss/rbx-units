@@ -1,10 +1,11 @@
 import { PathfindingService, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
 import Pathfinding from "client/Units/Pathfinding";
 import Selectable, { SelectionCirle, SelectionType } from "./Selectable";
+import { UnitData } from "shared/DataStore/Stores/UnitsStore";
 
 export default class Unit extends Selectable {
 	public id: string;
-	public unitName: string;
+	public type: string;
 	public model: UnitModel;
 	public pathfinding: Pathfinding;
 	public alignOrientation: AlignOrientation;
@@ -14,15 +15,17 @@ export default class Unit extends Selectable {
 	public selectionRadius = 1.5;
 	private selectionCircle: SelectionCirle;
 
-	constructor(id: string, unitName: string, position: Vector3) {
+	constructor(unitData: UnitData) {
+		print("new unit");
 		super();
 
-		this.id = id;
-		this.unitName = unitName;
+		this.id = unitData.id;
+		this.type = unitData.type;
 
-		this.model = ReplicatedFirst.Units[unitName].Clone();
+		this.model = ReplicatedFirst.Units[this.type].Clone();
 		this.model.Name = this.id;
-		this.model.PivotTo(new CFrame(position));
+		this.model.PivotTo(new CFrame(unitData.position));
+		this.model.Parent = Workspace.WaitForChild("UnitsCache");
 
 		// disabling not used humanoid states to save memory
 		// this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.FallingDown, false);

@@ -1,8 +1,8 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local Formation = TS.import(script, script.Parent, "Formation").default
-local Utils = TS.import(script, script.Parent.Parent.Parent, "Utils").default
+local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
 local SquareFormation
 do
 	local super = Formation

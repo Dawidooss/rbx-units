@@ -1,5 +1,5 @@
 import { UserInputService, Workspace } from "@rbxts/services";
-import guiInset from "./GuiInset";
+import GetGuiInset from "./GuiInset";
 
 const camera = Workspace.CurrentCamera!;
 
@@ -8,7 +8,7 @@ export default abstract class Utils {
 		filterDescendantsInstances?: Instance[],
 		filterType?: Enum.RaycastFilterType,
 	): RaycastResult | undefined {
-		const mouseLocation = UserInputService.GetMouseLocation().sub(new Vector2(0, guiInset));
+		const mouseLocation = UserInputService.GetMouseLocation().sub(new Vector2(0, GetGuiInset()));
 		const rayData = camera.ScreenPointToRay(mouseLocation.X, mouseLocation.Y, 1);
 
 		const raycastParams = new RaycastParams();
@@ -31,5 +31,9 @@ export default abstract class Utils {
 		const result = Workspace.Raycast(position, new Vector3(0, -100000000, 0), raycastParams);
 
 		return result;
+	}
+
+	public static Map(x: number, in_min: number, in_max: number, out_min: number, out_max: number) {
+		return out_min + ((x - in_min) * (out_max - out_min)) / (in_max - in_min);
 	}
 }

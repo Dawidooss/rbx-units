@@ -1,10 +1,11 @@
-import { ContextActionService, Debris, Players, RunService, UserInputService, Workspace } from "@rbxts/services";
-import guiInset from "../GuiInset";
-import UnitsManager from "./UnitsManager";
+import { ContextActionService, Players, RunService, UserInputService, Workspace } from "@rbxts/services";
+import GetGuiInset from "../../shared/GuiInset";
 import Input from "../Input";
 import HUD from "./HUD";
 import Selectable, { SelectionType } from "./Selectable";
-import Utils from "client/Utils";
+import Utils from "shared/Utils";
+import ClientGameStore from "client/DataStore/ClientGameStore";
+import ClientUnitsStore from "client/DataStore/ClientUnitsStore";
 
 const player = Players.LocalPlayer;
 const playerGui = player.WaitForChild("PlayerGui") as PlayerGui;
@@ -15,6 +16,9 @@ export enum SelectionMethod {
 	Single,
 	None,
 }
+
+const gameStore = ClientGameStore.Get();
+const unitsStore = gameStore.GetStore("UnitsStore") as ClientUnitsStore;
 
 export default abstract class Selection {
 	private static selectionType = SelectionMethod.None;
@@ -38,7 +42,7 @@ export default abstract class Selection {
 	}
 
 	private static SetHolding(state: boolean) {
-		const mouseLocation = UserInputService.GetMouseLocation().sub(new Vector2(0, guiInset));
+		const mouseLocation = UserInputService.GetMouseLocation().sub(new Vector2(0, GetGuiInset()));
 
 		Selection.holding = state;
 		Selection.boxCornerPosition = new Vector2(mouseLocation.X, mouseLocation.Y);
@@ -64,7 +68,7 @@ export default abstract class Selection {
 		const units = new Set<Selectable>();
 
 		if (Selection.selectionType === SelectionMethod.Box) {
-			for (const [_, unit] of UnitsManager.GetUnits()) {
+			for (const unit of unitsStore.GetUnitsInstances()) {
 				const pivot = unit.model.GetPivot();
 				const screenPosition = camera.WorldToScreenPoint(pivot.Position)[0];
 
@@ -85,7 +89,7 @@ export default abstract class Selection {
 			const result = Utils.GetMouseHit();
 			if (!result || !result.Instance) return units;
 
-			const unit = UnitsManager.GetUnit(result.Instance.Parent?.Name || "");
+			const unit = unitsStore.cache.get(result.Instance.Parent?.Name || "");
 			if (!unit) return units;
 		}
 
@@ -93,7 +97,7 @@ export default abstract class Selection {
 	}
 
 	private static Update() {
-		const mouseLocation = UserInputService.GetMouseLocation().sub(new Vector2(0, guiInset));
+		const mouseLocation = UserInputService.GetMouseLocation().sub(new Vector2(0, GetGuiInset()));
 		const hoveringUnits = Selection.FindHoveringUnits();
 
 		const boxSize = Selection.boxCornerPosition!.sub(mouseLocation);

@@ -1,7 +1,6 @@
 import { ReplicatedFirst, Workspace } from "@rbxts/services";
 import Selectable from "../Selectable";
-import Utils from "client/Utils";
-import UnitsManager from "../UnitsManager";
+import Utils from "shared/Utils";
 
 const camera = Workspace.CurrentCamera!;
 

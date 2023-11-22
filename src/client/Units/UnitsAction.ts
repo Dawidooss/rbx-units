@@ -1,5 +1,5 @@
 import { RunService, Workspace } from "@rbxts/services";
-import Utils from "../Utils";
+import Utils from "../../shared/Utils";
 import Selectable from "./Selectable";
 import Formation from "./Formations/Formation";
 import Input from "client/Input";

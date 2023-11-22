@@ -1,11 +1,17 @@
-import { Workspace } from "@rbxts/services";
-import UnitsManager from "./Units/UnitsManager";
+import { HttpService, Players, Workspace } from "@rbxts/services";
 import Input from "./Input";
-import Utils from "./Utils";
-import Network from "shared/Network";
-import Squash from "@rbxts/squash";
+import Utils from "../shared/Utils";
+import ClientGameStore from "./DataStore/ClientGameStore";
+import ClientUnitsStore, { ClientUnitData } from "./DataStore/ClientUnitsStore";
+import ClientPlayersStore from "./DataStore/ClientPlayersStore";
+import Unit from "./Units/Unit";
 
 const camera = Workspace.CurrentCamera!;
+const player = Players.LocalPlayer;
+
+const gameStore = ClientGameStore.Get();
+const unitsStore = gameStore.GetStore("UnitsStore") as ClientUnitsStore;
+const playersStore = gameStore.GetStore("PlayersStore") as ClientPlayersStore;
 
 export default abstract class Admin {
 	public static Init() {
@@ -13,12 +19,20 @@ export default abstract class Admin {
 	}
 
 	private static SpawnUnit() {
-		const mouseHitResult = Utils.GetMouseHit([UnitsManager.cache]);
+		const mouseHitResult = Utils.GetMouseHit([unitsStore.folder]);
 
 		if (mouseHitResult?.Position) {
-			const unitType = Squash.string.ser("Dummy");
-			const position = Squash.Vector3.ser(mouseHitResult.Position);
-			Network.FireServer("createUnit", unitType, position);
+			let unitData = {
+				id: HttpService.GenerateGUID(false),
+				type: "Dummy",
+				position: mouseHitResult.Position,
+				playerData: playersStore.cache.get(tostring(player.UserId))!,
+			} as ClientUnitData;
+
+			unitData.instance = new Unit(unitData);
+			unitsStore.AddUnit(unitData);
+
+			gameStore.replicator.Replicate("create-unit", unitsStore.Serialize(unitData));
 		}
 	}
 }
