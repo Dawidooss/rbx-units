@@ -129,7 +129,7 @@ do
 		local cframes = UnitsAction.formationSelected:GetCFramesInFormation(units, cframe, spread)
 		local unitsAndCFrames = UnitsAction.formationSelected:MatchUnitsToCFrames(units, cframes, cframe)
 		for unit, cframe in unitsAndCFrames do
-			unit:Move(cframe)
+			unit:StartPathfinding(cframe)
 		end
 	end)
 	UnitsAction.enabled = false

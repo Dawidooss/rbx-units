@@ -1,43 +1,35 @@
 import ClientGameStore from "./ClientGameStore";
 import Replicator from "./ClientReplicator";
-import TeamsStore, { SerializedTeamData } from "shared/DataStore/Stores/TeamStore";
-import { ServerResponse } from "types";
-import UnitsStore, { SerializedUnitData, UnitData } from "shared/DataStore/Stores/UnitsStore";
+import UnitsStore, { UnitData } from "shared/DataStore/Stores/UnitsStore";
 import Unit from "client/Units/Unit";
-import { Workspace } from "@rbxts/services";
+import { ServerScriptService, Workspace } from "@rbxts/services";
+import BitBuffer from "@rbxts/bitbuffer";
+import ClientReplicator from "./ClientReplicator";
+
+const replicator = ClientReplicator.Get();
 
 export default class ClientUnitsStore extends UnitsStore {
-	public replicator: Replicator;
 	public cache = new Map<string, ClientUnitData>();
 	public folder = new Instance("Folder", Workspace);
 
 	constructor(gameStore: ClientGameStore) {
 		super(gameStore);
-		this.replicator = gameStore.replicator;
 		this.folder.Name = "UnitsCache";
 
-		this.replicator.Connect("unit-created", (response: ServerResponse) => {
-			const serializedUnitData = response.data as SerializedUnitData;
-			const unitData = this.Deserialize(serializedUnitData) as ClientUnitData;
+		replicator.Connect("unit-created", (buffer: BitBuffer) => {
+			const unitData = this.Deserialize(buffer) as ClientUnitData;
 
 			if (this.cache.has(unitData.id)) return;
 
 			unitData.instance = new Unit(unitData);
 
-			this.AddUnit(unitData);
+			this.Add(unitData);
 		});
 
-		this.replicator.Connect("unit-removed", (response: ServerResponse) => {
-			const serializedUnitId = response.data as string;
-			const unitId = serializedUnitId;
-			this.RemoveUnit(unitId);
+		replicator.Connect("unit-removed", (buffer: BitBuffer) => {
+			const unitId = buffer.readString();
+			this.Remove(unitId);
 		});
-	}
-
-	public AddUnit(unitData: ClientUnitData): ClientUnitData {
-		super.AddUnit(unitData);
-
-		return unitData;
 	}
 
 	public GetUnitsInstances() {
@@ -48,11 +40,11 @@ export default class ClientUnitsStore extends UnitsStore {
 		return instances;
 	}
 
-	public OverrideData(serializedUnitDatas: SerializedUnitData[]): void {
+	public OverrideData(buffer: BitBuffer): void {
 		this.cache.forEach((unitData) => {
 			unitData.instance.Destroy();
 		});
-		super.OverrideData(serializedUnitDatas);
+		super.OverrideData(buffer);
 	}
 }
 

@@ -8,15 +8,15 @@ local gameStore = ServerGameStore:Get()
 local teamsStore = gameStore:GetStore("TeamsStore")
 local playersStore = gameStore:GetStore("PlayersStore")
 local redTeamId = HttpService:GenerateGUID(false)
-local redTeam = teamsStore:AddTeam({
+local redTeam = teamsStore:Add({
 	name = "Red",
 	id = redTeamId,
 	color = Color3.new(1, 0, 0),
 })
 Players.PlayerAdded:Connect(function(player)
-	playersStore:AddPlayer({
+	playersStore:Add({
 		player = player,
-		team = redTeam,
+		teamId = redTeamId,
 	})
 	player.CharacterAdded:Connect(function(character)
 		local humanoidRootPart = character:WaitForChild("HumanoidRootPart")

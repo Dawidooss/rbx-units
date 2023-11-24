@@ -1,11 +1,9 @@
-import ReplicatorBase from "../ReplicatorBase";
 import Store from "../Store";
 
 export default abstract class GameStore {
-	protected stores = new Map<string, Store<any, any>>();
-	public abstract replicator: ReplicatorBase;
+	protected stores = new Map<string, Store<any>>();
 
-	protected AddStore(store: Store<any, any>) {
+	protected AddStore(store: Store<any>) {
 		this.stores.set(store.name, store);
 	}
 

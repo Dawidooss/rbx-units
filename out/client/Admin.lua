@@ -3,16 +3,15 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local HttpService = _services.HttpService
 local Players = _services.Players
-local Workspace = _services.Workspace
 local Input = TS.import(script, script.Parent, "Input").default
 local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
 local ClientGameStore = TS.import(script, script.Parent, "DataStore", "ClientGameStore").default
 local Unit = TS.import(script, script.Parent, "Units", "Unit").default
-local camera = Workspace.CurrentCamera
+local ClientReplicator = TS.import(script, script.Parent, "DataStore", "ClientReplicator").default
 local player = Players.LocalPlayer
 local gameStore = ClientGameStore:Get()
 local unitsStore = gameStore:GetStore("UnitsStore")
-local playersStore = gameStore:GetStore("PlayersStore")
+local replicator = ClientReplicator:Get()
 local Admin
 do
 	Admin = {}
@@ -30,19 +29,18 @@ do
 			_result = _result.Position
 		end
 		if _result then
-			local _object = {
+			local unitData = {
 				id = HttpService:GenerateGUID(false),
 				type = "Dummy",
 				position = mouseHitResult.Position,
+				playerId = player.UserId,
+				targetPosition = mouseHitResult.Position,
+				movementStartTick = os.time(),
+				movementEndTick = os.time(),
 			}
-			local _left = "playerData"
-			local _cache = playersStore.cache
-			local _arg0 = tostring(player.UserId)
-			_object[_left] = _cache[_arg0]
-			local unitData = _object
 			unitData.instance = Unit.new(unitData)
-			unitsStore:AddUnit(unitData)
-			gameStore.replicator:Replicate("create-unit", unitsStore:Serialize(unitData))
+			unitsStore:Add(unitData)
+			replicator:Replicate("create-unit", unitsStore:Serialize(unitData).dumpString())
 		end
 	end
 end

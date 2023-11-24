@@ -4,10 +4,11 @@ import Store from "shared/DataStore/Store";
 import ServerTeamsStore from "./ServerTeamsStore";
 import ServerPlayersStore from "./ServerPlayersStore";
 import ServerUnitsStore from "./ServerUnitsStore";
+import BitBuffer from "@rbxts/bitbuffer";
+
+const replicator = ServerReplicator.Get();
 
 export default class ServerGameStore extends GameStore {
-	public replicator = new ServerReplicator(this);
-
 	private static instance: ServerGameStore;
 	constructor() {
 		super();
@@ -18,14 +19,15 @@ export default class ServerGameStore extends GameStore {
 		this.AddStore(new ServerPlayersStore(this));
 		this.AddStore(new ServerUnitsStore(this));
 
-		this.replicator.Connect("fetch-all", (player: Player) => {
-			const serializedStores = new Map<string, unknown>();
+		replicator.Connect("fetch-all", (player: Player) => {
+			const buffer = BitBuffer();
 
 			for (const [storeName, store] of this.stores) {
-				serializedStores.set(storeName, store.SerializeCache());
+				buffer.writeString(storeName);
+				store.SerializeCache(buffer);
 			}
 
-			const response = new ServerResponseBuilder().SetData(serializedStores).Build();
+			const response = new ServerResponseBuilder().SetData(buffer.dumpString()).Build();
 
 			return [response];
 		});

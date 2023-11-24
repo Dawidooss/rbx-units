@@ -1,12 +1,5 @@
 -- Compiled with roblox-ts v2.1.1
 local SelectionType
-local Selectable
-do
-	Selectable = {}
-	function Selectable:constructor()
-		self.selectionType = SelectionType.None
-	end
-end
 do
 	local _inverse = {}
 	SelectionType = setmetatable({}, {
@@ -20,6 +13,5 @@ do
 	_inverse[2] = "None"
 end
 return {
-	default = Selectable,
 	SelectionType = SelectionType,
 }

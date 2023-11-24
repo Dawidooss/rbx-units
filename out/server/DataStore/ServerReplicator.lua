@@ -14,25 +14,28 @@ do
 		local self = setmetatable({}, ServerReplicator)
 		return self:constructor(...) or self
 	end
-	function ServerReplicator:constructor(gameStore)
-		self.gameStore = gameStore
+	function ServerReplicator:constructor()
+		ServerReplicator.instance = self
 	end
-	function ServerReplicator:Replicate(player, key, serializedData)
-		local response = ServerResponseBuilder.new():SetData(serializedData):Build()
+	function ServerReplicator:Replicate(player, key, buffer)
+		local response = ServerResponseBuilder.new():SetData(buffer.dumpString()):Build()
 		Network:FireClient(player, key, response)
 	end
-	function ServerReplicator:ReplicateAll(key, serializedData)
-		local response = ServerResponseBuilder.new():SetData(serializedData):Build()
+	function ServerReplicator:ReplicateAll(key, buffer)
+		local response = ServerResponseBuilder.new():SetData(buffer.dumpString()):Build()
 		Network:FireAllClients(key, response)
 	end
-	function ServerReplicator:ReplicateExcept(player, key, serializedData)
-		local response = ServerResponseBuilder.new():SetData(serializedData):Build()
+	function ServerReplicator:ReplicateExcept(player, key, buffer)
+		local response = ServerResponseBuilder.new():SetData(buffer.dumpString()):Build()
 		Network:FireOtherClients(player, key, response)
 	end
 	function ServerReplicator:Connect(key, callback)
 		Network:BindFunctions({
 			[key] = callback,
 		})
+	end
+	function ServerReplicator:Get()
+		return ServerReplicator.instance or ServerReplicator.new()
 	end
 end
 do

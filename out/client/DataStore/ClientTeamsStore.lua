@@ -1,6 +1,9 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local TeamsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "TeamStore").default
+local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
+local ClientReplicator = TS.import(script, script.Parent, "ClientReplicator").default
+local replicator = ClientReplicator:Get()
 local ClientTeamsStore
 do
 	local super = TeamsStore
@@ -17,21 +20,18 @@ do
 	end
 	function ClientTeamsStore:constructor(gameStore)
 		super.constructor(self, gameStore)
-		self.replicator = gameStore.replicator
-		self.replicator:Connect("team-added", function(response)
-			local serializedTeamData = response.data
-			local teamData = self:Deserialize(serializedTeamData)
+		replicator:Connect("team-added", function(buffer)
+			local teamData = self:Deserialize(buffer)
 			local _cache = self.cache
 			local _id = teamData.id
 			if _cache[_id] then
 				return nil
 			end
-			self:AddTeam(teamData)
+			self:Add(teamData)
 		end)
-		self.replicator:Connect("team-removed", function(response)
-			local serializedTeamId = response.data
-			local teamId = serializedTeamId
-			self:RemoveTeam(teamId)
+		replicator:Connect("team-removed", function(buffer)
+			local teamId = buffer.readString()
+			self:Remove(teamId)
 		end)
 	end
 end

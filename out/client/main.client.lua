@@ -10,7 +10,7 @@ local HUDHandler = TS.import(script, script.Parent, "Units", "HUDHandler").defau
 local HUD = TS.import(script, script.Parent, "Units", "HUD").default
 local ClientGameStore = TS.import(script, script.Parent, "DataStore", "ClientGameStore").default
 local gameStore = ClientGameStore:Get()
-HUD:Init()
+local hud = HUD:Get()
 HUDHandler:Init()
 Selection:Init()
 Movement:Init()
@@ -20,6 +20,3 @@ UnitsAction:Init()
 RunService.RenderStepped:Connect(function(deltaTime)
 	Movement:Update(deltaTime)
 end)
-wait(10)
-local teamStore = gameStore:GetStore("TeamsStore")
-local playersStore = gameStore:GetStore("PlayersStore")

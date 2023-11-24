@@ -3,6 +3,9 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local ServerResponseBuilder = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").ServerResponseBuilder
 local UnitsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "UnitsStore").default
 local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
+local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
+local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").default
+local replicator = ServerReplicator:Get()
 local ServerUnitsStore
 do
 	local super = UnitsStore
@@ -19,26 +22,28 @@ do
 	end
 	function ServerUnitsStore:constructor(gameStore)
 		super.constructor(self, gameStore)
-		self.replicator = gameStore.replicator
-		self.replicator:Connect("create-unit", function(player, serializedUnitData)
-			local unitData = self:Deserialize(serializedUnitData)
-			self:AddUnit(unitData)
+		replicator:Connect("create-unit", function(player, data)
+			local buffer = BitBuffer(data)
+			local unitData = self:Deserialize(buffer)
+			self:Add(unitData)
 			return ServerResponseBuilder.new():Build()
 		end)
 	end
-	function ServerUnitsStore:AddUnit(unitData)
-		super.AddUnit(self, unitData)
-		self.replicator:ReplicateAll("unit-created", self:Serialize(unitData))
+	function ServerUnitsStore:Add(unitData)
+		super.Add(self, unitData)
+		replicator:ReplicateAll("unit-created", self:Serialize(unitData))
 		return unitData
 	end
-	function ServerUnitsStore:RemoveUnit(unitId)
-		super.RemoveUnit(self, unitId)
-		self.replicator:ReplicateAll("unit-removed", unitId)
+	function ServerUnitsStore:Remove(unitId)
+		super.Remove(self, unitId)
+		local buffer = BitBuffer()
+		buffer.writeString(unitId)
+		replicator:ReplicateAll("unit-removed", buffer)
 	end
 	function ServerUnitsStore:UpdateUnitPosition(unitData)
-		local position = unitData.position:Lerp(unitData.targetPosition, math.clamp(Utils:Map(tick(), unitData.movementStartTick, unitData.movementEndTick, 0, 1), 0, 1))
+		local position = unitData.position:Lerp(unitData.targetPosition, math.clamp(Utils:Map(os.time(), unitData.movementStartTick, unitData.movementEndTick, 0, 1), 0, 1))
 		unitData.position = position
-		unitData.movementStartTick = tick()
+		unitData.movementStartTick = os.time()
 	end
 end
 return {

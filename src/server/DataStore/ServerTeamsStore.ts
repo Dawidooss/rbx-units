@@ -1,24 +1,28 @@
-import Replicator from "./ServerReplicator";
-import TeamsStore, { SerializedTeamData, TeamData } from "shared/DataStore/Stores/TeamStore";
+import TeamsStore, { TeamData } from "shared/DataStore/Stores/TeamStore";
 import ServerGameStore from "./ServerGameStore";
+import BitBuffer from "@rbxts/bitbuffer";
+import ServerReplicator from "./ServerReplicator";
+
+const replicator = ServerReplicator.Get();
 
 export default class ServerTeamsStore extends TeamsStore {
-	public replicator: Replicator;
-
 	constructor(gameStore: ServerGameStore) {
 		super(gameStore);
-		this.replicator = gameStore.replicator;
 	}
 
-	public AddTeam(teamData: TeamData): TeamData {
-		super.AddTeam(teamData);
-		this.replicator.ReplicateAll("team-created", this.Serialize(teamData));
+	public Add(teamData: TeamData): TeamData {
+		super.Add(teamData);
+		replicator.ReplicateAll("team-created", this.Serialize(teamData));
 
 		return teamData;
 	}
 
-	public RemoveTeam(teamId: string): void {
-		super.RemoveTeam(teamId);
-		this.replicator.ReplicateAll("team-removed", teamId);
+	public Remove(teamId: string): void {
+		super.Remove(teamId);
+
+		const buffer = BitBuffer();
+		buffer.writeString(teamId);
+
+		replicator.ReplicateAll("team-removed", buffer);
 	}
 }

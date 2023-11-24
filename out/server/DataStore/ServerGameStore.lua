@@ -7,6 +7,8 @@ local ServerResponseBuilder = _ServerReplicator.ServerResponseBuilder
 local ServerTeamsStore = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerTeamsStore").default
 local ServerPlayersStore = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerPlayersStore").default
 local ServerUnitsStore = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerUnitsStore").default
+local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
+local replicator = ServerReplicator:Get()
 local ServerGameStore
 do
 	local super = GameStore
@@ -23,7 +25,6 @@ do
 	end
 	function ServerGameStore:constructor()
 		super.constructor(self)
-		self.replicator = ServerReplicator.new(self)
 		if ServerGameStore.instance then
 			return nil
 		end
@@ -31,13 +32,13 @@ do
 		self:AddStore(ServerTeamsStore.new(self))
 		self:AddStore(ServerPlayersStore.new(self))
 		self:AddStore(ServerUnitsStore.new(self))
-		self.replicator:Connect("fetch-all", function(player)
-			local serializedStores = {}
+		replicator:Connect("fetch-all", function(player)
+			local buffer = BitBuffer()
 			for storeName, store in self.stores do
-				local _arg1 = store:SerializeCache()
-				serializedStores[storeName] = _arg1
+				buffer.writeString(storeName)
+				store:SerializeCache(buffer)
 			end
-			local response = ServerResponseBuilder.new():SetData(serializedStores):Build()
+			local response = ServerResponseBuilder.new():SetData(buffer.dumpString()):Build()
 			return { response }
 		end)
 	end

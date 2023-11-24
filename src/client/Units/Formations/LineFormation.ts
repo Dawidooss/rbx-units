@@ -1,7 +1,7 @@
 import { StarterGui, Workspace } from "@rbxts/services";
 import Formation from "./Formation";
-import Selectable from "../Selectable";
 import Utils from "shared/Utils";
+import Unit from "../Unit";
 
 export default class LineFormation extends Formation {
 	constructor() {
@@ -10,7 +10,7 @@ export default class LineFormation extends Formation {
 		this.circle.Middle.Transparency = 1;
 	}
 
-	GetCFramesInFormation(units: Set<Selectable>, mainCFrame: CFrame, spread: number): CFrame[] {
+	GetCFramesInFormation(units: Set<Unit>, mainCFrame: CFrame, spread: number): CFrame[] {
 		const cframes = new Array<CFrame>();
 		const unitsPerRow = 15;
 

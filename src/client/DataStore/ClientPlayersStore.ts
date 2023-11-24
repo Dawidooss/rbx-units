@@ -1,26 +1,23 @@
+import BitBuffer from "@rbxts/bitbuffer";
 import ClientGameStore from "./ClientGameStore";
-import Replicator from "./ClientReplicator";
-import PlayersStore, { SerializedPlayerData } from "shared/DataStore/Stores/PlayersStore";
-import { ServerResponse } from "types";
+import PlayersStore from "shared/DataStore/Stores/PlayersStore";
+import ClientReplicator from "./ClientReplicator";
+
+const replicator = ClientReplicator.Get();
 
 export default class ClientPlayersStore extends PlayersStore {
-	public replicator: Replicator;
-
 	constructor(gameStore: ClientGameStore) {
 		super(gameStore);
-		this.replicator = gameStore.replicator;
 
-		this.replicator.Connect("player-added", (response: ServerResponse) => {
-			const serializedPlayerData = response.data as SerializedPlayerData;
-			const playerData = this.Deserialize(serializedPlayerData);
+		replicator.Connect("player-added", (buffer: BitBuffer) => {
+			const playerData = this.Deserialize(buffer);
 
-			this.AddPlayer(playerData);
+			this.Add(playerData);
 		});
 
-		this.replicator.Connect("player-removed", (response: ServerResponse) => {
-			const serializedPlayerId = response.data as string;
-			const playerId = serializedPlayerId;
-			this.RemovePlayer(playerId);
+		replicator.Connect("player-removed", (buffer: BitBuffer) => {
+			const playerId = buffer.readUInt32();
+			this.Remove(tostring(playerId));
 		});
 	}
 }

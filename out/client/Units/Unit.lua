@@ -5,17 +5,13 @@ local ReplicatedFirst = _services.ReplicatedFirst
 local RunService = _services.RunService
 local Workspace = _services.Workspace
 local Pathfinding = TS.import(script, script.Parent, "Pathfinding").default
-local _Selectable = TS.import(script, script.Parent, "Selectable")
-local Selectable = _Selectable.default
-local SelectionType = _Selectable.SelectionType
+local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
 local Unit
 do
-	local super = Selectable
 	Unit = setmetatable({}, {
 		__tostring = function()
 			return "Unit"
 		end,
-		__index = super,
 	})
 	Unit.__index = Unit
 	function Unit.new(...)
@@ -23,14 +19,13 @@ do
 		return self:constructor(...) or self
 	end
 	function Unit:constructor(unitData)
+		self.movingTo = false
+		self.moveToTries = 0
 		self.selectionType = SelectionType.None
 		self.selectionRadius = 1.5
-		print("new unit")
-		super.constructor(self)
-		self.id = unitData.id
-		self.type = unitData.type
-		self.model = ReplicatedFirst.Units[self.type]:Clone()
-		self.model.Name = self.id
+		self.data = unitData
+		self.model = ReplicatedFirst.Units[self.data.type]:Clone()
+		self.model.Name = self.data.type
 		self.model:PivotTo(CFrame.new(unitData.position))
 		self.model.Parent = Workspace:WaitForChild("UnitsCache")
 		-- disabling not used humanoid states to save memory
@@ -67,30 +62,77 @@ do
 		weld.Part0 = self.selectionCircle
 		weld.Part1 = self.model.HumanoidRootPart
 		self:Select(SelectionType.None)
+		self.model.Humanoid.MoveToFinished:Connect(function(reached)
+			-- const groundedCurrentWaypoint = new Vector3(
+			-- currentWaypoint.Position.X,
+			-- this.beamAttachment.WorldPosition.Y,
+			-- currentWaypoint.Position.Z,
+			-- );
+			local _targetPosition = self.data.targetPosition
+			local _position = self.model:GetPivot().Position
+			local distanceToTargetPosition = (_targetPosition - _position).Magnitude
+			if distanceToTargetPosition < 1 then
+				if self.pathfinding.active then
+					self.pathfinding:MoveToFinished(true)
+				end
+				self.moveToTries = 0
+				self.movingTo = false
+				return nil
+			else
+				self.moveToTries += 1
+			end
+			if self.moveToTries > 10 then
+				warn("UNIT MOVE TO: " .. (self.data.id .. " couldn't get to targetCFrame due to exceed moveToTries limit"))
+				if self.pathfinding.active then
+					self.pathfinding:MoveToFinished(false)
+				end
+				self.moveToTries = 0
+				self.movingTo = false
+				return nil
+			end
+			self:MoveTo(self.data.targetPosition)
+		end)
 	end
 	function Unit:Select(selectionType)
 		self.selectionType = selectionType
-		self.pathfinding:EnableVisualisation(selectionType == SelectionType.Selected)
 		self:Update()
 		if selectionType == SelectionType.Selected then
-			RunService:BindToRenderStep("unit-" .. (self.id .. "-selectionUpdate"), 1, function()
+			RunService:BindToRenderStep("unit-" .. (self.data.id .. "-selectionUpdate"), 1, function()
 				return self:Update()
 			end)
 		else
-			RunService:UnbindFromRenderStep("unit-" .. (self.id .. "-selectionUpdate"))
+			RunService:UnbindFromRenderStep("unit-" .. (self.data.id .. "-selectionUpdate"))
 		end
 	end
-	function Unit:Move(cframe)
+	function Unit:StartPathfinding(cframe)
 		self.pathfinding:Start(cframe)
-		self:Update()
+	end
+	function Unit:MoveTo(position)
+		self.data.targetPosition = position
+		self.data.movementStartTick = tick()
+		-- this.data.movementEndTick = ?????
+		self.movingTo = true
+		self.model.Humanoid:MoveTo(position)
 	end
 	function Unit:GetPosition()
 		return self.model:GetPivot().Position
 	end
 	function Unit:Update()
 		local selected = self.selectionType == SelectionType.Selected
+		self.pathfinding:EnableVisualisation(selected)
 		self.selectionCircle.Transparency = if self.selectionType == SelectionType.None then 1 else 0.2
 		self.selectionCircle.Color = if selected then Color3.fromRGB(143, 142, 145) else Color3.fromRGB(70, 70, 70)
+	end
+	function Unit:UpdatePhysics()
+		if self.movingTo then
+			local _targetPosition = self.data.targetPosition
+			local _position = self.model:GetPivot().Position
+			local distanceToCurrentWaypoint = (_targetPosition - _position).Magnitude
+			if distanceToCurrentWaypoint > 1 and self.model.Humanoid:GetState() ~= Enum.HumanoidStateType.Running then
+				-- during movement unit stopped and didn't reached target, try to MoveTo again
+				self:MoveTo(self.data.targetPosition)
+			end
+		end
 	end
 	function Unit:Destroy()
 	end

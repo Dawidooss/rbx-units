@@ -7,12 +7,13 @@ import UnitsAction from "./Units/UnitsAction";
 import HUDHandler from "./Units/HUDHandler";
 import HUD from "./Units/HUD";
 import ClientGameStore from "./DataStore/ClientGameStore";
-import ClientTeamsStore from "./DataStore/ClientTeamsStore";
 import ClientPlayersStore from "./DataStore/ClientPlayersStore";
+import TeamsStore from "shared/DataStore/Stores/TeamStore";
+import ClientTeamsStore from "./DataStore/ClientTeamsStore";
 
 const gameStore = ClientGameStore.Get();
+const hud = HUD.Get();
 
-HUD.Init();
 HUDHandler.Init();
 Selection.Init();
 Movement.Init();
@@ -23,7 +24,3 @@ UnitsAction.Init();
 RunService.RenderStepped.Connect((deltaTime) => {
 	Movement.Update(deltaTime);
 });
-
-wait(10);
-const teamStore = gameStore.GetStore("TeamsStore") as ClientTeamsStore;
-const playersStore = gameStore.GetStore("PlayersStore") as ClientPlayersStore;

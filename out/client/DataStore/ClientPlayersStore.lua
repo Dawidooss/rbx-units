@@ -1,6 +1,8 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local PlayersStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "PlayersStore").default
+local ClientReplicator = TS.import(script, script.Parent, "ClientReplicator").default
+local replicator = ClientReplicator:Get()
 local ClientPlayersStore
 do
 	local super = PlayersStore
@@ -17,16 +19,13 @@ do
 	end
 	function ClientPlayersStore:constructor(gameStore)
 		super.constructor(self, gameStore)
-		self.replicator = gameStore.replicator
-		self.replicator:Connect("player-added", function(response)
-			local serializedPlayerData = response.data
-			local playerData = self:Deserialize(serializedPlayerData)
-			self:AddPlayer(playerData)
+		replicator:Connect("player-added", function(buffer)
+			local playerData = self:Deserialize(buffer)
+			self:Add(playerData)
 		end)
-		self.replicator:Connect("player-removed", function(response)
-			local serializedPlayerId = response.data
-			local playerId = serializedPlayerId
-			self:RemovePlayer(playerId)
+		replicator:Connect("player-removed", function(buffer)
+			local playerId = buffer.readUInt32()
+			self:Remove(tostring(playerId))
 		end)
 	end
 end

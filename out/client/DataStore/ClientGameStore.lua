@@ -5,6 +5,7 @@ local ClientReplicator = TS.import(script, script.Parent, "ClientReplicator").de
 local ClientTeamsStore = TS.import(script, script.Parent, "ClientTeamsStore").default
 local ClientPlayersStore = TS.import(script, script.Parent, "ClientPlayersStore").default
 local ClientUnitsStore = TS.import(script, script.Parent, "ClientUnitsStore").default
+local replicator = ClientReplicator:Get()
 local ClientGameStore
 do
 	local super = GameStore
@@ -21,7 +22,6 @@ do
 	end
 	function ClientGameStore:constructor()
 		super.constructor(self)
-		self.replicator = ClientReplicator.new(self)
 		if ClientGameStore.instance then
 			return nil
 		end
@@ -29,7 +29,21 @@ do
 		self:AddStore(ClientTeamsStore.new(self))
 		self:AddStore(ClientPlayersStore.new(self))
 		self:AddStore(ClientUnitsStore.new(self))
-		self.replicator:FetchAll()
+		local defaultData = replicator:FetchAll()
+		if not defaultData then
+			-- TODO warn
+			return nil
+		end
+		self:OverrideAll(defaultData)
+	end
+	function ClientGameStore:OverrideAll(buffer)
+		while buffer.getPointerByte() ~= buffer.getByteLength() do
+			local storeName = buffer.readString()
+			local _result = self:GetStore(storeName)
+			if _result ~= nil then
+				_result:OverrideData(buffer)
+			end
+		end
 	end
 	function ClientGameStore:Get()
 		return ClientGameStore.instance or ClientGameStore.new()

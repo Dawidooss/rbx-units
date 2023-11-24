@@ -2,8 +2,6 @@
 // 	- The first return value of InvokeClient (but not InvokeServer) is bool success, which is false if the invocation timed out
 // 	  or the handler errored.
 
-import { ServerResponse } from "types";
-
 // 	- InvokeServer will error if it times out or the handler errors
 
 // 	- InvokeServer/InvokeClient do not return instantly on an error, but instead check for failure every 0.5 seconds. This is

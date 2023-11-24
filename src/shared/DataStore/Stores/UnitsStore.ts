@@ -1,77 +1,43 @@
 import Store from "../Store";
-import { Players } from "@rbxts/services";
-import TeamsStore, { TeamData } from "./TeamStore";
-import PlayersStore, { PlayerData } from "./PlayersStore";
-import { uint } from "@rbxts/squash";
-import Utils from "shared/Utils";
+import BitBuffer from "@rbxts/bitbuffer";
 
-export default class UnitsStore extends Store<UnitData, SerializedUnitData> {
+export default class UnitsStore extends Store<UnitData> {
 	public name = "UnitsStore";
-	public cache = new Map<string, UnitData>();
 
-	public AddUnit(unitData: UnitData): UnitData {
+	public Add(unitData: UnitData): UnitData {
 		this.cache.set(unitData.id, unitData);
 		return unitData;
 	}
 
-	public RemoveUnit(unitId: string) {
-		this.cache.delete(unitId);
+	public Serialize(unitData: UnitData, buffer?: BitBuffer): BitBuffer {
+		buffer ||= BitBuffer();
+		buffer.writeString(unitData.id);
+		buffer.writeString(unitData.type);
+		buffer.writeVector3(unitData.position);
+		buffer.writeUInt32(unitData.playerId);
+
+		buffer.writeVector3(unitData.targetPosition);
+		buffer.writeUInt32(unitData.movementStartTick);
+		buffer.writeUInt32(unitData.movementEndTick);
+
+		return buffer;
 	}
 
-	public OverrideData(serializedUnitDatas: SerializedUnitData[]) {
-		this.cache.clear();
-
-		for (const serializedUnitData of serializedUnitDatas) {
-			const unitData = this.Deserialize(serializedUnitData);
-			this.AddUnit(unitData);
-		}
-	}
-
-	public Serialize(unitData: UnitData): SerializedUnitData {
+	public Deserialize(buffer: BitBuffer): UnitData {
 		return {
-			id: unitData.id,
-			type: unitData.type,
-			position: unitData.position,
-			playerId: unitData.playerData.player.UserId,
+			id: buffer.readString(),
+			type: buffer.readString(),
+			position: buffer.readVector3(),
+			playerId: buffer.readUInt16(),
 
-			targetPosition: unitData.targetPosition,
-			movementStartTick: unitData.movementStartTick,
-			movementEndTick: unitData.movementEndTick,
-		};
-	}
-
-	public Deserialize(serializedUnitData: SerializedUnitData): UnitData {
-		const playerId = serializedUnitData.playerId;
-		const player = Players.GetPlayerByUserId(playerId)!;
-		const playerData = (this.gameStore.GetStore("PlayersStore") as PlayersStore).cache.get(
-			tostring(player.UserId),
-		)!;
-
-		return {
-			id: serializedUnitData.id,
-			type: serializedUnitData.type,
-			position: serializedUnitData.position,
-			playerData: playerData,
-
-			targetPosition: serializedUnitData.targetPosition,
-			movementStartTick: serializedUnitData.movementStartTick,
-			movementEndTick: serializedUnitData.movementEndTick,
+			targetPosition: buffer.readVector3(),
+			movementStartTick: buffer.readUInt16(),
+			movementEndTick: buffer.readUInt16(),
 		};
 	}
 }
 
 export type UnitData = {
-	id: string;
-	type: string;
-	position: Vector3;
-	playerData: PlayerData;
-
-	targetPosition: Vector3;
-	movementStartTick: number;
-	movementEndTick: number;
-};
-
-export type SerializedUnitData = {
 	id: string;
 	type: string;
 	position: Vector3;

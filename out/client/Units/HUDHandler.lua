@@ -11,13 +11,14 @@ do
 	function HUDHandler:constructor()
 	end
 	function HUDHandler:Init()
-		HUD.gui.Formations.Line.MouseButton1Click:Connect(function()
+		HUDHandler.hud = HUD:Get()
+		HUDHandler.hud.gui.Formations.Line.MouseButton1Click:Connect(function()
 			return UnitsAction:SetFormation(LineFormation.new())
 		end)
-		HUD.gui.Formations.Square.MouseButton1Click:Connect(function()
+		HUDHandler.hud.gui.Formations.Square.MouseButton1Click:Connect(function()
 			return UnitsAction:SetFormation(SquareFormation.new())
 		end)
-		HUD.gui.Formations.Circle.MouseButton1Click:Connect(function()
+		HUDHandler.hud.gui.Formations.Circle.MouseButton1Click:Connect(function()
 			return UnitsAction:SetFormation(CircleFormation.new())
 		end)
 	end

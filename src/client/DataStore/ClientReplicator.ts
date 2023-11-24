@@ -1,46 +1,43 @@
 import Network from "shared/Network";
-import ReplicatorBase from "shared/DataStore/ReplicatorBase";
-import { ServerResponse } from "types";
-import ClientGameStore from "./ClientGameStore";
+import BitBuffer from "@rbxts/bitbuffer";
 
-export default class ClientReplicator implements ReplicatorBase {
-	public gameStore: ClientGameStore;
-
-	constructor(gameStore: ClientGameStore) {
-		this.gameStore = gameStore;
+export default class ClientReplicator {
+	private static instance: ClientReplicator;
+	constructor() {
+		ClientReplicator.instance = this;
 	}
 
 	public Replicate(key: string, serializedData: any) {
 		const response = Network.InvokeServer(key, serializedData);
 
-		// if (response.error) {
-		// 	if (response.errorMessage === "fetch-all") {
-		// 		this.FetchAll();
-		// 	}
-		// }
-
 		return response;
 	}
 
-	public Connect(key: string, callback: Callback) {
+	public Connect(key: string, callback: (buffer: BitBuffer) => void) {
 		Network.BindEvents({
-			[key]: callback,
+			[key]: (response: ServerResponse) => {
+				const bufferStringified = response.data as string;
+				const buffer = BitBuffer(bufferStringified);
+				callback(buffer);
+			},
 		});
 	}
 
-	public FetchAll() {
+	public FetchAll(): BitBuffer | undefined {
 		let response = Network.InvokeServer("fetch-all")[0] as ServerResponse;
 		if (!response) return;
 
-		const data = response.data as Map<string, unknown>;
-
-		if (response.error || !data) {
+		const bufferStringified = response.data as string;
+		if (response.error || !bufferStringified) {
 			// TODO notify error
 			return;
 		}
 
-		for (const [storeName, serializedData] of data) {
-			this.gameStore.GetStore(storeName)?.OverrideData(serializedData);
-		}
+		const buffer = BitBuffer(bufferStringified);
+		return buffer;
+	}
+
+	public static Get() {
+		return ClientReplicator.instance || new ClientReplicator();
 	}
 }

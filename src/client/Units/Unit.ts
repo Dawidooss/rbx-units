@@ -1,29 +1,26 @@
 import { PathfindingService, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
 import Pathfinding from "client/Units/Pathfinding";
-import Selectable, { SelectionCirle, SelectionType } from "./Selectable";
 import { UnitData } from "shared/DataStore/Stores/UnitsStore";
+import { SelectionType } from "shared/types";
 
-export default class Unit extends Selectable {
-	public id: string;
-	public type: string;
+export default class Unit {
+	public data: UnitData;
 	public model: UnitModel;
 	public pathfinding: Pathfinding;
 	public alignOrientation: AlignOrientation;
 	public groundAttachment: Attachment;
 
+	public movingTo = false;
+	public moveToTries = 0;
 	public selectionType = SelectionType.None;
 	public selectionRadius = 1.5;
 	private selectionCircle: SelectionCirle;
 
 	constructor(unitData: UnitData) {
-		print("new unit");
-		super();
+		this.data = unitData;
 
-		this.id = unitData.id;
-		this.type = unitData.type;
-
-		this.model = ReplicatedFirst.Units[this.type].Clone();
-		this.model.Name = this.id;
+		this.model = ReplicatedFirst.Units[this.data.type].Clone();
+		this.model.Name = this.data.type;
 		this.model.PivotTo(new CFrame(unitData.position));
 		this.model.Parent = Workspace.WaitForChild("UnitsCache");
 
@@ -68,34 +65,81 @@ export default class Unit extends Selectable {
 		weld.Part1 = this.model.HumanoidRootPart;
 
 		this.Select(SelectionType.None);
+
+		this.model.Humanoid.MoveToFinished.Connect((reached) => {
+			// const groundedCurrentWaypoint = new Vector3(
+			// 	currentWaypoint.Position.X,
+			// 	this.beamAttachment.WorldPosition.Y,
+			// 	currentWaypoint.Position.Z,
+			// );
+			const distanceToTargetPosition = this.data.targetPosition.sub(this.model.GetPivot().Position).Magnitude;
+			if (distanceToTargetPosition < 1) {
+				if (this.pathfinding.active) this.pathfinding.MoveToFinished(true);
+				this.moveToTries = 0;
+				this.movingTo = false;
+				return;
+			} else {
+				this.moveToTries += 1;
+			}
+
+			if (this.moveToTries > 10) {
+				warn(`UNIT MOVE TO: ${this.data.id} couldn't get to targetCFrame due to exceed moveToTries limit`);
+				if (this.pathfinding.active) this.pathfinding.MoveToFinished(false);
+				this.moveToTries = 0;
+				this.movingTo = false;
+				return;
+			}
+
+			this.MoveTo(this.data.targetPosition);
+		});
 	}
 
 	public Select(selectionType: SelectionType) {
 		this.selectionType = selectionType;
 
-		this.pathfinding.EnableVisualisation(selectionType === SelectionType.Selected);
 		this.Update();
 		if (selectionType === SelectionType.Selected) {
-			RunService.BindToRenderStep(`unit-${this.id}-selectionUpdate`, 1, () => this.Update());
+			RunService.BindToRenderStep(`unit-${this.data.id}-selectionUpdate`, 1, () => this.Update());
 		} else {
-			RunService.UnbindFromRenderStep(`unit-${this.id}-selectionUpdate`);
+			RunService.UnbindFromRenderStep(`unit-${this.data.id}-selectionUpdate`);
 		}
 	}
 
-	public Move(cframe: CFrame) {
+	public StartPathfinding(cframe: CFrame) {
 		this.pathfinding.Start(cframe);
-		this.Update();
+	}
+
+	public MoveTo(position: Vector3) {
+		this.data.targetPosition = position;
+		this.data.movementStartTick = tick();
+		// this.data.movementEndTick = ?????
+
+		this.movingTo = true;
+		this.model.Humanoid.MoveTo(position);
+		this.pathfinding.EnableVisualisation();
 	}
 
 	public GetPosition(): Vector3 {
 		return this.model.GetPivot().Position;
 	}
 
-	private Update() {
+	private UpdateVisuals() {
 		const selected = this.selectionType === SelectionType.Selected;
 
+		this.pathfinding.EnableVisualisation(selected);
 		this.selectionCircle.Transparency = this.selectionType === SelectionType.None ? 1 : 0.2;
-		this.selectionCircle.Color = selected ? Color3.fromRGB(143, 142, 145) : Color3.fromRGB(70,70,70); //prettier-ignore
+		this.selectionCircle.Color = selected ? Color3.fromRGB(143, 142, 145) : Color3.fromRGB(70, 70, 70);
+	}
+
+	private UpdatePhysics() {
+		if (this.movingTo) {
+			const distanceToCurrentWaypoint = this.data.targetPosition.sub(this.model.GetPivot().Position).Magnitude;
+
+			if (distanceToCurrentWaypoint > 1 && this.model.Humanoid.GetState() !== Enum.HumanoidStateType.Running) {
+				// during movement unit stopped and didn't reached target, try to MoveTo again
+				this.MoveTo(this.data.targetPosition);
+			}
+		}
 	}
 
 	public Destroy() {}

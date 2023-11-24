@@ -1,27 +1,45 @@
 import GameStore from "./Stores/GameStore";
-import ReplicatorBase from "./ReplicatorBase";
+import BitBuffer from "@rbxts/bitbuffer";
 
-export default abstract class Store<D, S> {
+export default abstract class Store<T> {
 	public name: string = "Store";
 	public gameStore: GameStore;
-	public replicator: ReplicatorBase;
-	public cache = new Map<string, D>();
+	public cache = new Map<string, T>();
 
 	constructor(gameStore: GameStore) {
 		this.gameStore = gameStore;
-		this.replicator = gameStore.replicator;
 	}
 
-	public SerializeCache(): S[] {
-		let serializedCache = [];
-		for (const [_, data] of this.cache) {
-			serializedCache.push(this.Serialize(data));
+	public OverrideData(buffer: BitBuffer) {
+		this.cache.clear();
+
+		while (!buffer.isFinished()) {
+			const hasData = buffer.readBits(1)[0] === 1;
+			if (!hasData) {
+				break;
+			}
+			const unitData = this.Deserialize(buffer);
+			this.Add(unitData);
 		}
-
-		return serializedCache;
 	}
 
-	abstract OverrideData(data: unknown): void;
-	abstract Serialize(data: D): S;
-	abstract Deserialize(data: S): D;
+	public SerializeCache(buffer?: BitBuffer): BitBuffer {
+		buffer ||= BitBuffer();
+
+		for (const [_, data] of this.cache) {
+			buffer.writeBits(1);
+			this.Serialize(data, buffer);
+		}
+		buffer.writeBits(0);
+
+		return buffer;
+	}
+
+	public Remove(key: string) {
+		this.cache.delete(key);
+	}
+
+	abstract Add(value: T): void;
+	abstract Serialize(data: T, buffer?: BitBuffer): BitBuffer;
+	abstract Deserialize(buffer: BitBuffer): T;
 }

@@ -3,10 +3,11 @@ import ClientReplicator from "./ClientReplicator";
 import ClientTeamsStore from "./ClientTeamsStore";
 import ClientPlayersStore from "./ClientPlayersStore";
 import ClientUnitsStore from "./ClientUnitsStore";
+import BitBuffer from "@rbxts/bitbuffer";
+
+const replicator = ClientReplicator.Get();
 
 export default class ClientGameStore extends GameStore {
-	public replicator = new ClientReplicator(this);
-
 	private static instance: ClientGameStore;
 	constructor() {
 		super();
@@ -18,7 +19,19 @@ export default class ClientGameStore extends GameStore {
 		this.AddStore(new ClientPlayersStore(this));
 		this.AddStore(new ClientUnitsStore(this));
 
-		this.replicator.FetchAll();
+		const defaultData = replicator.FetchAll();
+		if (!defaultData) {
+			// TODO warn
+			return;
+		}
+		this.OverrideAll(defaultData);
+	}
+
+	public OverrideAll(buffer: BitBuffer) {
+		while (buffer.getPointerByte() !== buffer.getByteLength()) {
+			const storeName = buffer.readString();
+			this.GetStore(storeName)?.OverrideData(buffer);
+		}
 	}
 
 	public static Get() {

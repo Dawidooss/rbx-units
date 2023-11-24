@@ -1,6 +1,6 @@
 import { ReplicatedFirst, Workspace } from "@rbxts/services";
-import Selectable from "../Selectable";
 import Utils from "shared/Utils";
+import Unit from "../Unit";
 
 const camera = Workspace.CurrentCamera!;
 
@@ -14,10 +14,10 @@ export default abstract class Formation {
 		this.arrow = this.circle.Arrow;
 	}
 
-	public MatchUnitsToCFrames(units: Set<Selectable>, cframes: CFrame[], mainCFrame: CFrame): Map<Selectable, CFrame> {
-		const matchedUnitsToCFrames = new Map<Selectable, CFrame>();
+	public MatchUnitsToCFrames(units: Set<Unit>, cframes: CFrame[], mainCFrame: CFrame): Map<Unit, CFrame> {
+		const matchedUnitsToCFrames = new Map<Unit, CFrame>();
 
-		let distancesArray = new Array<[Selectable, number, CFrame]>();
+		let distancesArray = new Array<[Unit, number, CFrame]>();
 		for (const unit of units) {
 			const pivotPosition = unit.GetPosition();
 			for (const cframe of cframes) {
@@ -29,7 +29,7 @@ export default abstract class Formation {
 			return a[1] < b[1];
 		});
 
-		const visitedUnits = new Set<Selectable>();
+		const visitedUnits = new Set<Unit>();
 		const visitedCFrames = new Set<CFrame>();
 
 		for (const [unit, , cframe] of distancesArray) {
@@ -44,9 +44,9 @@ export default abstract class Formation {
 		return matchedUnitsToCFrames;
 	}
 
-	public abstract GetCFramesInFormation(units: Set<Selectable>, mainCFrame: CFrame, spread: number): CFrame[];
+	public abstract GetCFramesInFormation(units: Set<Unit>, mainCFrame: CFrame, spread: number): CFrame[];
 
-	public VisualisePositions(units: Set<Selectable>, cframe: CFrame, spread: number) {
+	public VisualisePositions(units: Set<Unit>, cframe: CFrame, spread: number) {
 		if (this.destroyed) return;
 
 		this.circle.PivotTo(cframe);

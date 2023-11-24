@@ -1,5 +1,6 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
+local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local Store = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Store").default
 local TeamsStore
 do
@@ -18,42 +19,31 @@ do
 	function TeamsStore:constructor(...)
 		super.constructor(self, ...)
 		self.name = "TeamsStore"
-		self.cache = {}
 	end
-	function TeamsStore:AddTeam(teamData)
+	function TeamsStore:Add(teamData)
 		local teamId = teamData.id
 		local _cache = self.cache
 		local _teamData = teamData
 		_cache[teamId] = _teamData
 		return teamData
 	end
-	function TeamsStore:RemoveTeam(teamId)
-		local _cache = self.cache
-		local _teamId = teamId
-		_cache[_teamId] = nil
-	end
-	function TeamsStore:OverrideData(serializedTeamDatas)
-		table.clear(self.cache)
-		for _, serializedTeamData in serializedTeamDatas do
-			local teamData = self:Deserialize(serializedTeamData)
-			self:AddTeam(teamData)
+	function TeamsStore:Serialize(teamData, buffer)
+		local _condition = buffer
+		if not buffer then
+			_condition = BitBuffer()
 		end
+		buffer = _condition
+		buffer.writeString(teamData.id)
+		buffer.writeString(teamData.name)
+		buffer.writeColor3(teamData.color)
+		return buffer
 	end
-	function TeamsStore:Serialize(teamData)
-		return teamData
-		-- return {
-		-- name: Squash.string.ser(teamData.name),
-		-- id: Squash.string.ser(teamData.id),
-		-- color: Squash.Color3.ser(teamData.color),
-		-- };
-	end
-	function TeamsStore:Deserialize(serializedTeamData)
-		return serializedTeamData
-		-- return {
-		-- name: Squash.string.des(serializedTeamData.name),
-		-- id: Squash.string.des(serializedTeamData.id),
-		-- color: Squash.Color3.des(serializedTeamData.color),
-		-- };
+	function TeamsStore:Deserialize(buffer)
+		return {
+			id = buffer.readString(),
+			name = buffer.readString(),
+			color = buffer.readColor3(),
+		}
 	end
 end
 return {

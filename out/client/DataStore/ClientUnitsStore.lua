@@ -3,6 +3,8 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local UnitsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "UnitsStore").default
 local Unit = TS.import(script, script.Parent.Parent, "Units", "Unit").default
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
+local ClientReplicator = TS.import(script, script.Parent, "ClientReplicator").default
+local replicator = ClientReplicator:Get()
 local ClientUnitsStore
 do
 	local super = UnitsStore
@@ -21,28 +23,21 @@ do
 		super.constructor(self, gameStore)
 		self.cache = {}
 		self.folder = Instance.new("Folder", Workspace)
-		self.replicator = gameStore.replicator
 		self.folder.Name = "UnitsCache"
-		self.replicator:Connect("unit-created", function(response)
-			local serializedUnitData = response.data
-			local unitData = self:Deserialize(serializedUnitData)
+		replicator:Connect("unit-created", function(buffer)
+			local unitData = self:Deserialize(buffer)
 			local _cache = self.cache
 			local _id = unitData.id
 			if _cache[_id] ~= nil then
 				return nil
 			end
 			unitData.instance = Unit.new(unitData)
-			self:AddUnit(unitData)
+			self:Add(unitData)
 		end)
-		self.replicator:Connect("unit-removed", function(response)
-			local serializedUnitId = response.data
-			local unitId = serializedUnitId
-			self:RemoveUnit(unitId)
+		replicator:Connect("unit-removed", function(buffer)
+			local unitId = buffer.readString()
+			self:Remove(unitId)
 		end)
-	end
-	function ClientUnitsStore:AddUnit(unitData)
-		super.AddUnit(self, unitData)
-		return unitData
 	end
 	function ClientUnitsStore:GetUnitsInstances()
 		local instances = {}
@@ -52,7 +47,7 @@ do
 		end
 		return instances
 	end
-	function ClientUnitsStore:OverrideData(serializedUnitDatas)
+	function ClientUnitsStore:OverrideData(buffer)
 		local _cache = self.cache
 		local _arg0 = function(unitData)
 			unitData.instance:Destroy()
@@ -60,7 +55,7 @@ do
 		for _k, _v in _cache do
 			_arg0(_v, _k, _cache)
 		end
-		super.OverrideData(self, serializedUnitDatas)
+		super.OverrideData(self, buffer)
 	end
 end
 return {

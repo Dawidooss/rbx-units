@@ -2,42 +2,48 @@ import Replicator, { ServerResponseBuilder } from "./ServerReplicator";
 import { TeamData } from "shared/DataStore/Stores/TeamStore";
 import ServerGameStore from "./ServerGameStore";
 import PlayersStore, { PlayerData } from "shared/DataStore/Stores/PlayersStore";
-import UnitsStore, { SerializedUnitData, UnitData } from "shared/DataStore/Stores/UnitsStore";
+import UnitsStore, { UnitData } from "shared/DataStore/Stores/UnitsStore";
 import Utils from "shared/Utils";
+import BitBuffer from "@rbxts/bitbuffer";
+import ServerReplicator from "./ServerReplicator";
+
+const replicator = ServerReplicator.Get();
 
 export default class ServerUnitsStore extends UnitsStore {
-	public replicator: Replicator;
-
 	constructor(gameStore: ServerGameStore) {
 		super(gameStore);
-		this.replicator = gameStore.replicator;
 
-		this.replicator.Connect("create-unit", (player: Player, serializedUnitData: SerializedUnitData) => {
-			const unitData = this.Deserialize(serializedUnitData);
-			this.AddUnit(unitData);
+		replicator.Connect("create-unit", (player: Player, data: string) => {
+			const buffer = BitBuffer(data);
+
+			const unitData = this.Deserialize(buffer);
+			this.Add(unitData);
 			return new ServerResponseBuilder().Build();
 		});
 	}
 
-	public AddUnit(unitData: UnitData): UnitData {
-		super.AddUnit(unitData);
-		this.replicator.ReplicateAll("unit-created", this.Serialize(unitData));
+	public Add(unitData: UnitData): UnitData {
+		super.Add(unitData);
+		replicator.ReplicateAll("unit-created", this.Serialize(unitData));
 
 		return unitData;
 	}
 
-	public RemoveUnit(unitId: string): void {
-		super.RemoveUnit(unitId);
-		this.replicator.ReplicateAll("unit-removed", unitId);
+	public Remove(unitId: string): void {
+		super.Remove(unitId);
+
+		const buffer = BitBuffer();
+		buffer.writeString(unitId);
+		replicator.ReplicateAll("unit-removed", buffer);
 	}
 
 	public UpdateUnitPosition(unitData: UnitData) {
 		const position = unitData.position.Lerp(
 			unitData.targetPosition,
-			math.clamp(Utils.Map(tick(), unitData.movementStartTick, unitData.movementEndTick, 0, 1), 0, 1),
+			math.clamp(Utils.Map(os.time(), unitData.movementStartTick, unitData.movementEndTick, 0, 1), 0, 1),
 		);
 
 		unitData.position = position;
-		unitData.movementStartTick = tick();
+		unitData.movementStartTick = os.time();
 	}
 }

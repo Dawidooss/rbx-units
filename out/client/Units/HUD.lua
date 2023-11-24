@@ -8,11 +8,22 @@ local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
 local HUD
 do
-	HUD = {}
-	function HUD:constructor()
+	HUD = setmetatable({}, {
+		__tostring = function()
+			return "HUD"
+		end,
+	})
+	HUD.__index = HUD
+	function HUD.new(...)
+		local self = setmetatable({}, HUD)
+		return self:constructor(...) or self
 	end
-	function HUD:Init()
+	function HUD:constructor()
+		HUD.instance = self
 		self.gui = playerGui:WaitForChild("HUD")
+	end
+	function HUD:Get()
+		return HUD.instance or HUD.new()
 	end
 end
 return {

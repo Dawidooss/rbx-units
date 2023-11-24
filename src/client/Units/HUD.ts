@@ -4,11 +4,18 @@ const player = Players.LocalPlayer;
 const playerGui = player.WaitForChild("PlayerGui") as PlayerGui;
 const camera = Workspace.CurrentCamera!;
 
-export default abstract class HUD {
-	public static gui: HUDGui;
+export default class HUD {
+	public gui: HUDGui;
 
-	public static Init() {
+	private static instance: HUD;
+	constructor() {
+		HUD.instance = this;
+
 		this.gui = playerGui.WaitForChild("HUD") as HUDGui;
+	}
+
+	public static Get() {
+		return HUD.instance || new HUD();
 	}
 }
 

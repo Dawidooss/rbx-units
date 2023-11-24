@@ -1,62 +1,35 @@
 import Store from "../Store";
 import { Players } from "@rbxts/services";
-import TeamsStore, { TeamData } from "./TeamStore";
+import BitBuffer from "@rbxts/bitbuffer";
 
-export default class PlayersStore extends Store<PlayerData, SerializedPlayerData> {
+export default class PlayersStore extends Store<PlayerData> {
 	public name = "PlayersStore";
-	public cache = new Map<string, PlayerData>();
 
-	public AddPlayer(playerData: PlayerData): PlayerData {
+	public Add(playerData: PlayerData): PlayerData {
 		this.cache.set(tostring(playerData.player.UserId), playerData);
 		return playerData;
 	}
 
-	public RemovePlayer(playerId: string) {
-		this.cache.delete(playerId);
+	public Serialize(playerData: PlayerData, buffer?: BitBuffer): BitBuffer {
+		buffer ||= BitBuffer();
+		buffer.writeUInt32(playerData.player.UserId);
+		buffer.writeString(playerData.teamId);
+
+		return buffer;
 	}
 
-	public OverrideData(serializedPlayerDatas: SerializedPlayerData[]) {
-		this.cache.clear();
-
-		for (const serializedPlayerData of serializedPlayerDatas) {
-			const playerData = this.Deserialize(serializedPlayerData);
-			this.AddPlayer(playerData);
-		}
-	}
-
-	public Serialize(playerData: PlayerData): SerializedPlayerData {
-		return {
-			playerId: playerData.player.UserId,
-			teamId: playerData.team.id,
-		};
-		// return {
-		// 	playerId: Squash.int.ser(playerData.player.UserId),
-		// 	teamId: Squash.string.ser(playerData.team.id),
-		// };
-	}
-
-	public Deserialize(serializedPlayerData: SerializedPlayerData): PlayerData {
-		const playerId = serializedPlayerData.playerId;
+	public Deserialize(buffer: BitBuffer): PlayerData {
+		const playerId = buffer.readUInt32();
 		const player = Players.GetPlayerByUserId(playerId)!;
-
-		const teamId = serializedPlayerData.teamId;
-		const team = (this.gameStore.GetStore("TeamsStore") as TeamsStore).cache.get(teamId)!;
 
 		return {
 			player: player,
-			team: team,
+			teamId: buffer.readString(),
 		};
 	}
 }
 
 export type PlayerData = {
 	player: Player;
-	team: TeamData;
-};
-
-export type SerializedPlayerData = {
-	playerId: number;
 	teamId: string;
 };
-
-export type Unasigned = undefined;

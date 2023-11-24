@@ -1,17 +1,17 @@
-import { HttpService, Players, Workspace } from "@rbxts/services";
+import { HttpService, Players, ReplicatedFirst } from "@rbxts/services";
 import Input from "./Input";
 import Utils from "../shared/Utils";
 import ClientGameStore from "./DataStore/ClientGameStore";
 import ClientUnitsStore, { ClientUnitData } from "./DataStore/ClientUnitsStore";
-import ClientPlayersStore from "./DataStore/ClientPlayersStore";
 import Unit from "./Units/Unit";
+import ClientReplicator from "./DataStore/ClientReplicator";
 
-const camera = Workspace.CurrentCamera!;
 const player = Players.LocalPlayer;
 
 const gameStore = ClientGameStore.Get();
 const unitsStore = gameStore.GetStore("UnitsStore") as ClientUnitsStore;
-const playersStore = gameStore.GetStore("PlayersStore") as ClientPlayersStore;
+
+const replicator = ClientReplicator.Get();
 
 export default abstract class Admin {
 	public static Init() {
@@ -26,13 +26,17 @@ export default abstract class Admin {
 				id: HttpService.GenerateGUID(false),
 				type: "Dummy",
 				position: mouseHitResult.Position,
-				playerData: playersStore.cache.get(tostring(player.UserId))!,
+				playerId: player.UserId,
+
+				targetPosition: mouseHitResult.Position,
+				movementStartTick: os.time(),
+				movementEndTick: os.time(),
 			} as ClientUnitData;
 
 			unitData.instance = new Unit(unitData);
-			unitsStore.AddUnit(unitData);
+			unitsStore.Add(unitData);
 
-			gameStore.replicator.Replicate("create-unit", unitsStore.Serialize(unitData));
+			replicator.Replicate("create-unit", unitsStore.Serialize(unitData).dumpString());
 		}
 	}
 }

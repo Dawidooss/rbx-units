@@ -1,17 +1,17 @@
 import { RunService, Workspace } from "@rbxts/services";
 import Utils from "../../shared/Utils";
-import Selectable from "./Selectable";
 import Formation from "./Formations/Formation";
 import Input from "client/Input";
 import Selection from "./Selection";
 import LineFormation from "./Formations/LineFormation";
+import Unit from "./Unit";
 
 const camera = Workspace.CurrentCamera!;
 
 export default abstract class UnitsAction {
 	public static enabled = false;
 
-	private static units = new Set<Selectable>();
+	private static units = new Set<Unit>();
 	private static formationSelected = new LineFormation();
 	private static spreadLimits: [number, number];
 	private static cframe = new CFrame();
@@ -44,7 +44,7 @@ export default abstract class UnitsAction {
 	}
 
 	public static GetActionCFrame(
-		units: Set<Selectable>,
+		units: Set<Unit>,
 		resultCallback: (cframe: CFrame, spread: number) => void,
 	): Callback {
 		UnitsAction.units = units;
@@ -113,12 +113,12 @@ export default abstract class UnitsAction {
 		UnitsAction.formationSelected.VisualisePositions(UnitsAction.units, UnitsAction.cframe, spread);
 	}
 
-	public static async MoveUnits(units: Set<Selectable>, cframe: CFrame, spread: number) {
+	public static async MoveUnits(units: Set<Unit>, cframe: CFrame, spread: number) {
 		const cframes = UnitsAction.formationSelected.GetCFramesInFormation(units, cframe, spread);
 		const unitsAndCFrames = UnitsAction.formationSelected.MatchUnitsToCFrames(units, cframes, cframe);
 
 		for (const [unit, cframe] of unitsAndCFrames) {
-			unit.Move(cframe);
+			unit.StartPathfinding(cframe);
 		}
 	}
 }

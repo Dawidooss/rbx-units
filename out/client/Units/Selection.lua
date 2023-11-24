@@ -9,9 +9,9 @@ local Workspace = _services.Workspace
 local GetGuiInset = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "GuiInset").default
 local Input = TS.import(script, script.Parent.Parent, "Input").default
 local HUD = TS.import(script, script.Parent, "HUD").default
-local SelectionType = TS.import(script, script.Parent, "Selectable").SelectionType
 local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
 local ClientGameStore = TS.import(script, script.Parent.Parent, "DataStore", "ClientGameStore").default
+local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
@@ -30,6 +30,7 @@ do
 end
 local gameStore = ClientGameStore:Get()
 local unitsStore = gameStore:GetStore("UnitsStore")
+local hud = HUD:Get()
 local Selection
 do
 	Selection = {}
@@ -70,7 +71,7 @@ do
 			for _, unit in unitsStore:GetUnitsInstances() do
 				local pivot = unit.model:GetPivot()
 				local screenPosition = (camera:WorldToScreenPoint(pivot.Position))
-				if screenPosition.X >= HUD.gui.SelectionBox.Position.X.Offset - math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.X <= HUD.gui.SelectionBox.Position.X.Offset + math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.Y >= HUD.gui.SelectionBox.Position.Y.Offset - math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2) and screenPosition.Y <= HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2))) then
+				if screenPosition.X >= hud.gui.SelectionBox.Position.X.Offset - math.abs(hud.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.X <= hud.gui.SelectionBox.Position.X.Offset + math.abs(hud.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.Y >= hud.gui.SelectionBox.Position.Y.Offset - math.abs(hud.gui.SelectionBox.Size.Y.Offset / 2) and screenPosition.Y <= hud.gui.SelectionBox.Position.Y.Offset + math.abs(hud.gui.SelectionBox.Size.Y.Offset / 2))) then
 					units[unit] = true
 				end
 			end
@@ -106,15 +107,15 @@ do
 		local middle = _boxCornerPosition - _arg0
 		-- define if curently is box selecting or selecting single unit by just hovering
 		Selection.selectionType = if boxSize.Magnitude > 3 and Selection.holding then SelectionMethod.Box else SelectionMethod.Single
-		HUD.gui.SelectionBox.Visible = Selection.selectionType == SelectionMethod.Box and Selection.holding
+		hud.gui.SelectionBox.Visible = Selection.selectionType == SelectionMethod.Box and Selection.holding
 		-- update selectionBox ui wether
 		if Selection.selectionType == SelectionMethod.Box then
 			Selection.selectionType = if boxSize.Magnitude > 3 then SelectionMethod.Box else SelectionMethod.Single
 			Selection.boxSize = boxSize
-			HUD.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
-			HUD.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y)
+			hud.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
+			hud.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y)
 		end
-		HUD.gui.SelectionBox.Visible = Selection.selectionType == SelectionMethod.Box
+		hud.gui.SelectionBox.Visible = Selection.selectionType == SelectionMethod.Box
 		-- unhover old units
 		local _hoveringUnits = Selection.hoveringUnits
 		local _arg0_1 = function(unit)
@@ -160,6 +161,9 @@ do
 			end
 			if self.selectedUnits[unit] ~= nil then
 				return nil
+			end
+			if unit.data.playerId ~= player.UserId then
+				continue
 			end
 			unit:Select(SelectionType.Selected)
 			Selection.selectedUnits[unit] = true

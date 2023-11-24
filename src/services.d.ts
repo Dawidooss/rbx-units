@@ -3,6 +3,18 @@ type UnitModel = Model & {
 	HumanoidRootPart: BasePart;
 };
 
+type SelectionCirle = BasePart & {
+	Highlight: Highlight;
+	Attachment: Attachment;
+};
+
+type ServerResponse = {
+	status: string;
+	data?: unknown;
+	error: boolean;
+	errorMessage?: string;
+};
+
 type ActionCircle = Model & {
 	Positions: Model;
 	Arrow: Model & {

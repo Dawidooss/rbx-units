@@ -3,15 +3,18 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local HttpService = _services.HttpService
 local PathfindingService = _services.PathfindingService
+local Players = _services.Players
 local ReplicatedFirst = _services.ReplicatedFirst
-local RunService = _services.RunService
 local Workspace = _services.Workspace
 local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
+local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
+local ClientReplicator = TS.import(script, script.Parent.Parent, "DataStore", "ClientReplicator").default
 local agentParams = {
 	AgentCanJump = false,
 	WaypointSpacing = math.huge,
 	AgentRadius = 2,
 }
+local replicator = ClientReplicator:Get()
 local Pathfinding
 do
 	Pathfinding = setmetatable({}, {
@@ -31,9 +34,7 @@ do
 		self.waypoints = {}
 		self.currentWaypointIndex = 0
 		self.pathId = ""
-		self.moveToCurrentWaypointTries = 0
 		self.unit = unit
-		self.agent = unit.model
 		self.path = PathfindingService:CreatePath(agentParams)
 		self.visualisation = ReplicatedFirst:FindFirstChild("NormalAction"):Clone()
 		self.visualisationPart = self.visualisation.Middle
@@ -42,58 +43,22 @@ do
 		self.visualisation.Arrow:Destroy()
 		self.visualisationPart.Parent = nil
 		self.beamAttachment = Instance.new("Attachment")
-		self.beamAttachment.Parent = self.agent.HumanoidRootPart
-		local _exp = self.agent:GetPivot()
+		self.beamAttachment.Parent = self.unit.model.HumanoidRootPart
+		local _exp = self.unit.model:GetPivot()
 		local _arg0 = CFrame.Angles(0, math.pi, math.pi / 2)
 		self.beamAttachment.WorldCFrame = _exp * _arg0
 		self.path.Blocked:Connect(function(blockedWaypointIndex)
 			wait()
 			self:ComputePath()
 		end)
-		self.agent.Humanoid.MoveToFinished:Connect(function(reached)
-			if not self.active then
-				return nil
-			end
-			local currentWaypoint = self.waypoints[self.currentWaypointIndex + 1]
-			if not currentWaypoint then
-				return nil
-			end
-			local groundedCurrentWaypoint = Vector3.new(currentWaypoint.Position.X, self.beamAttachment.WorldPosition.Y, currentWaypoint.Position.Z)
-			local _worldPosition = self.beamAttachment.WorldPosition
-			local distanceToCurrentWaypoint = (groundedCurrentWaypoint - _worldPosition).Magnitude
-			if distanceToCurrentWaypoint < 1 then
-				if self.currentWaypointIndex == #self.waypoints - 1 then
-					self:Stop(true)
-					return nil
-				end
-				self.currentWaypointIndex += 1
-				self.moveToCurrentWaypointTries = 0
-			else
-				self.moveToCurrentWaypointTries += 1
-			end
-			self:MoveToCurrentWaypoint()
-		end)
 	end
-	Pathfinding.Start = TS.async(function(self, targetCFrame, stopCallback)
+	Pathfinding.Start = TS.async(function(self, targetCFrame)
 		self.targetCFrame = targetCFrame
 		self.active = true
-		self.stopCallback = stopCallback
 		TS.await(self:ComputePath())
 		self:CreateVisualisation()
-		local _result = self.loopConnection
-		if _result ~= nil then
-			_result:Disconnect()
-		end
-		self.loopConnection = RunService.RenderStepped:Connect(function()
-			self:Update()
-		end)
 	end)
 	function Pathfinding:Stop(success)
-		local _result = self.stopCallback
-		if _result ~= nil then
-			_result(success)
-		end
-		-- this.agent.MoveTo(this.agent.GetPivot().Position);
 		if success then
 			local orientation = { self.targetCFrame:ToOrientation() }
 			self.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[2], 0)
@@ -101,58 +66,57 @@ do
 		self.active = false
 		self.waypoints = {}
 		self.currentWaypointIndex = 0
-		local _result_1 = self.loopConnection
-		if _result_1 ~= nil then
-			_result_1:Disconnect()
-		end
 		self:ClearVisualisation()
 	end
 	function Pathfinding:EnableVisualisation(state)
 		self.visualisationEnabled = state
 		self:CreateVisualisation()
 	end
+	function Pathfinding:MoveToFinished(success)
+		if success then
+			if self.currentWaypointIndex == #self.waypoints - 1 then
+				self:Stop(true)
+				return nil
+			end
+			self.currentWaypointIndex += 1
+		end
+	end
 	Pathfinding.ComputePath = TS.async(function(self)
 		local pathId = HttpService:GenerateGUID(false)
 		self.pathId = pathId
-		self.path:ComputeAsync(self.agent:GetPivot().Position, self.targetCFrame.Position)
+		self.path:ComputeAsync(self.unit.model:GetPivot().Position, self.targetCFrame.Position)
 		if self.path.Status ~= Enum.PathStatus.Success and self.path.Status ~= Enum.PathStatus.ClosestNoPath then
 			return nil
 		end
-		self.moveToCurrentWaypointTries = 0
 		self.waypoints = self.path:GetWaypoints()
 		self.currentWaypointIndex = 1
 		self.pathId = HttpService:GenerateGUID(false)
 		self:MoveToCurrentWaypoint()
 	end)
 	function Pathfinding:MoveToCurrentWaypoint()
-		if self.moveToCurrentWaypointTries > 10 then
-			warn("PATHFINDING: " .. (self.agent.Name .. " couldn't get to targetCFrame due to exceed moveToCurrentWaypointTries limit"))
-			self:Stop(false)
-			return nil
-		end
 		local waypoint = self.waypoints[self.currentWaypointIndex + 1]
 		if not waypoint then
 			self:Stop(true)
 			return nil
 		end
-		local orientation = { CFrame.new(self.agent:GetPivot().Position, waypoint.Position):ToOrientation() }
+		local orientation = { CFrame.new(self.unit.model:GetPivot().Position, waypoint.Position):ToOrientation() }
 		self.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[2], 0)
-		self.agent.Humanoid:MoveTo(waypoint.Position)
-	end
-	function Pathfinding:Update()
-		if self.active and self.visualisationEnabled then
+		if self.visualisationEnabled then
 			self:UpdateVisualisation()
 		end
-		local currentWaypoint = self.waypoints[self.currentWaypointIndex + 1]
-		if not currentWaypoint then
-			return nil
-		end
-		local groundedCurrentWaypoint = Vector3.new(currentWaypoint.Position.X, self.beamAttachment.WorldPosition.Y, currentWaypoint.Position.Z)
-		local _worldPosition = self.beamAttachment.WorldPosition
-		local distanceToCurrentWaypoint = (groundedCurrentWaypoint - _worldPosition).Magnitude
-		if distanceToCurrentWaypoint > 1 and self.agent.Humanoid:GetState() ~= Enum.HumanoidStateType.Running then
-			self.moveToCurrentWaypointTries += 1
-			self:MoveToCurrentWaypoint()
+		local buffer = BitBuffer()
+		buffer.writeString(self.unit.data.id)
+		buffer.writeVector3(waypoint.Position)
+		buffer.writeFloat32(tick())
+		local currentPosition = self.unit.model:GetPivot()
+		self.unit.model.Humanoid:MoveTo(waypoint.Position)
+		-- replicate to server if player is owner of this unit
+		if self.unit.data.playerId == Players.LocalPlayer.UserId then
+			local response = replicator:Replicate("move-unit", buffer.dumpString())[1]
+			if response.error then
+				self.unit.model:PivotTo(currentPosition)
+				self:Stop(false)
+			end
 		end
 	end
 	function Pathfinding:ClearVisualisation()

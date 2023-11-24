@@ -8,16 +8,16 @@ const teamsStore = gameStore.GetStore("TeamsStore") as ServerTeamsStore;
 const playersStore = gameStore.GetStore("PlayersStore") as ServerPlayersStore;
 
 const redTeamId = HttpService.GenerateGUID(false);
-const redTeam = teamsStore.AddTeam({
+const redTeam = teamsStore.Add({
 	name: "Red",
 	id: redTeamId,
 	color: new Color3(1, 0, 0),
 });
 
 Players.PlayerAdded.Connect((player) => {
-	playersStore.AddPlayer({
+	playersStore.Add({
 		player: player,
-		team: redTeam,
+		teamId: redTeamId,
 	});
 
 	player.CharacterAdded.Connect((character) => {

@@ -1,13 +1,9 @@
-import {
-	AvatarEditorService,
-	HttpService,
-	PathfindingService,
-	ReplicatedFirst,
-	RunService,
-	Workspace,
-} from "@rbxts/services";
+import { HttpService, PathfindingService, Players, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
 import Unit from "./Unit";
 import Utils from "../../shared/Utils";
+import ClientGameStore from "client/DataStore/ClientGameStore";
+import BitBuffer from "@rbxts/bitbuffer";
+import ClientReplicator from "client/DataStore/ClientReplicator";
 
 const agentParams = {
 	AgentCanJump: false,
@@ -15,28 +11,25 @@ const agentParams = {
 	AgentRadius: 2,
 };
 
+const replicator = ClientReplicator.Get();
+
 export default class Pathfinding {
 	public active = false;
 	public visualisationEnabled = false;
 	public targetCFrame = new CFrame();
 
 	private unit: Unit;
-	private agent: UnitModel;
 	private path: Path;
-	private stopCallback: ((success: boolean) => void) | undefined;
 	private waypoints = new Array<PathWaypoint>();
 	private currentWaypointIndex = 0;
 	private pathId = "";
-	private moveToCurrentWaypointTries = 0;
 
 	private visualisation: ActionCircle;
 	private visualisationPart: ActionCircle["Middle"];
 	private beamAttachment: Attachment;
-	private loopConnection: RBXScriptConnection | undefined;
 
 	constructor(unit: Unit) {
 		this.unit = unit;
-		this.agent = unit.model;
 
 		this.path = PathfindingService.CreatePath(agentParams);
 
@@ -49,59 +42,24 @@ export default class Pathfinding {
 		this.visualisationPart.Parent = undefined;
 
 		this.beamAttachment = new Instance("Attachment");
-		this.beamAttachment.Parent = this.agent.HumanoidRootPart;
-		this.beamAttachment.WorldCFrame = this.agent.GetPivot().mul(CFrame.Angles(0, math.pi, math.pi / 2));
+		this.beamAttachment.Parent = this.unit.model.HumanoidRootPart;
+		this.beamAttachment.WorldCFrame = this.unit.model.GetPivot().mul(CFrame.Angles(0, math.pi, math.pi / 2));
 
 		this.path.Blocked.Connect((blockedWaypointIndex) => {
 			wait();
 			this.ComputePath();
 		});
-
-		this.agent.Humanoid.MoveToFinished.Connect((reached) => {
-			if (!this.active) return;
-
-			const currentWaypoint = this.waypoints[this.currentWaypointIndex];
-			if (!currentWaypoint) return;
-
-			const groundedCurrentWaypoint = new Vector3(
-				currentWaypoint.Position.X,
-				this.beamAttachment.WorldPosition.Y,
-				currentWaypoint.Position.Z,
-			);
-			const distanceToCurrentWaypoint = groundedCurrentWaypoint.sub(this.beamAttachment.WorldPosition).Magnitude;
-			if (distanceToCurrentWaypoint < 1) {
-				if (this.currentWaypointIndex === this.waypoints.size() - 1) {
-					this.Stop(true);
-					return;
-				}
-
-				this.currentWaypointIndex += 1;
-				this.moveToCurrentWaypointTries = 0;
-			} else {
-				this.moveToCurrentWaypointTries += 1;
-			}
-			this.MoveToCurrentWaypoint();
-		});
 	}
 
-	public async Start(targetCFrame: CFrame, stopCallback?: (success: boolean) => void) {
+	public async Start(targetCFrame: CFrame) {
 		this.targetCFrame = targetCFrame;
 		this.active = true;
-		this.stopCallback = stopCallback;
 
 		await this.ComputePath();
 
 		this.CreateVisualisation();
-
-		this.loopConnection?.Disconnect();
-		this.loopConnection = RunService.RenderStepped.Connect(() => {
-			this.Update();
-		});
 	}
 	public Stop(success: boolean) {
-		this.stopCallback?.(success);
-
-		// this.agent.MoveTo(this.agent.GetPivot().Position);
 		if (success) {
 			const orientation = this.targetCFrame.ToOrientation();
 			this.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[1], 0);
@@ -111,7 +69,6 @@ export default class Pathfinding {
 		this.waypoints = [];
 		this.currentWaypointIndex = 0;
 
-		this.loopConnection?.Disconnect();
 		this.ClearVisualisation();
 	}
 
@@ -120,17 +77,27 @@ export default class Pathfinding {
 		this.CreateVisualisation();
 	}
 
+	public MoveToFinished(success: boolean) {
+		if (success) {
+			if (this.currentWaypointIndex === this.waypoints.size() - 1) {
+				this.Stop(true);
+				return;
+			}
+
+			this.currentWaypointIndex += 1;
+		}
+	}
+
 	private async ComputePath() {
 		const pathId = HttpService.GenerateGUID(false);
 		this.pathId = pathId;
 
-		this.path.ComputeAsync(this.agent.GetPivot().Position, this.targetCFrame.Position);
+		this.path.ComputeAsync(this.unit.model.GetPivot().Position, this.targetCFrame.Position);
 
 		if (this.path.Status !== Enum.PathStatus.Success && this.path.Status !== Enum.PathStatus.ClosestNoPath) {
 			return;
 		}
 
-		this.moveToCurrentWaypointTries = 0;
 		this.waypoints = this.path.GetWaypoints();
 		this.currentWaypointIndex = 1;
 		this.pathId = HttpService.GenerateGUID(false);
@@ -139,14 +106,6 @@ export default class Pathfinding {
 	}
 
 	private MoveToCurrentWaypoint() {
-		if (this.moveToCurrentWaypointTries > 10) {
-			warn(
-				`PATHFINDING: ${this.agent.Name} couldn't get to targetCFrame due to exceed moveToCurrentWaypointTries limit`,
-			);
-			this.Stop(false);
-			return;
-		}
-
 		const waypoint = this.waypoints[this.currentWaypointIndex];
 
 		if (!waypoint) {
@@ -154,28 +113,30 @@ export default class Pathfinding {
 			return;
 		}
 
-		const orientation = new CFrame(this.agent.GetPivot().Position, waypoint.Position).ToOrientation();
+		const orientation = new CFrame(this.unit.model.GetPivot().Position, waypoint.Position).ToOrientation();
 		this.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[1], 0);
-		this.agent.Humanoid.MoveTo(waypoint.Position);
-	}
 
-	private Update() {
-		if (this.active && this.visualisationEnabled) {
+		if (this.visualisationEnabled) {
 			this.UpdateVisualisation();
 		}
 
-		const currentWaypoint = this.waypoints[this.currentWaypointIndex];
-		if (!currentWaypoint) return;
-		const groundedCurrentWaypoint = new Vector3(
-			currentWaypoint.Position.X,
-			this.beamAttachment.WorldPosition.Y,
-			currentWaypoint.Position.Z,
-		);
-		const distanceToCurrentWaypoint = groundedCurrentWaypoint.sub(this.beamAttachment.WorldPosition).Magnitude;
+		const buffer = BitBuffer();
+		buffer.writeString(this.unit.data.id);
+		buffer.writeVector3(waypoint.Position);
+		buffer.writeFloat32(tick());
 
-		if (distanceToCurrentWaypoint > 1 && this.agent.Humanoid.GetState() !== Enum.HumanoidStateType.Running) {
-			this.moveToCurrentWaypointTries += 1;
-			this.MoveToCurrentWaypoint();
+		const currentPosition = this.unit.model.GetPivot();
+
+		this.unit.model.Humanoid.MoveTo(waypoint.Position);
+
+		// replicate to server if player is owner of this unit
+		if (this.unit.data.playerId === Players.LocalPlayer.UserId) {
+			const response = replicator.Replicate("move-unit", buffer.dumpString())[0] as ServerResponse;
+
+			if (response.error) {
+				this.unit.model.PivotTo(currentPosition);
+				this.Stop(false);
+			}
 		}
 	}
 

@@ -1,27 +1,25 @@
 import Network from "shared/Network";
 import GameStore from "./ServerGameStore";
-import ReplicatorBase from "shared/DataStore/ReplicatorBase";
-import { ServerResponse } from "types";
+import BitBuffer from "@rbxts/bitbuffer";
 
-export default class ServerReplicator implements ReplicatorBase {
-	public gameStore: GameStore;
-
-	constructor(gameStore: GameStore) {
-		this.gameStore = gameStore;
+export default class ServerReplicator {
+	private static instance: ServerReplicator;
+	constructor() {
+		ServerReplicator.instance = this;
 	}
 
-	public Replicate(player: Player, key: string, serializedData: unknown) {
-		const response = new ServerResponseBuilder().SetData(serializedData).Build();
+	public Replicate(player: Player, key: string, buffer: BitBuffer) {
+		const response = new ServerResponseBuilder().SetData(buffer.dumpString()).Build();
 		Network.FireClient(player, key, response);
 	}
 
-	public ReplicateAll(key: string, serializedData: unknown) {
-		const response = new ServerResponseBuilder().SetData(serializedData).Build();
+	public ReplicateAll(key: string, buffer: BitBuffer) {
+		const response = new ServerResponseBuilder().SetData(buffer.dumpString()).Build();
 		Network.FireAllClients(key, response);
 	}
 
-	public ReplicateExcept(player: Player, key: string, serializedData: unknown) {
-		const response = new ServerResponseBuilder().SetData(serializedData).Build();
+	public ReplicateExcept(player: Player, key: string, buffer: BitBuffer) {
+		const response = new ServerResponseBuilder().SetData(buffer.dumpString()).Build();
 		Network.FireOtherClients(player, key, response);
 	}
 
@@ -29,6 +27,10 @@ export default class ServerReplicator implements ReplicatorBase {
 		Network.BindFunctions({
 			[key]: callback,
 		});
+	}
+
+	public static Get() {
+		return ServerReplicator.instance || new ServerReplicator();
 	}
 }
 

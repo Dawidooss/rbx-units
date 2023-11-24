@@ -2,10 +2,11 @@ import { ContextActionService, Players, RunService, UserInputService, Workspace 
 import GetGuiInset from "../../shared/GuiInset";
 import Input from "../Input";
 import HUD from "./HUD";
-import Selectable, { SelectionType } from "./Selectable";
 import Utils from "shared/Utils";
 import ClientGameStore from "client/DataStore/ClientGameStore";
 import ClientUnitsStore from "client/DataStore/ClientUnitsStore";
+import Unit from "./Unit";
+import { SelectionType } from "shared/types";
 
 const player = Players.LocalPlayer;
 const playerGui = player.WaitForChild("PlayerGui") as PlayerGui;
@@ -20,14 +21,16 @@ export enum SelectionMethod {
 const gameStore = ClientGameStore.Get();
 const unitsStore = gameStore.GetStore("UnitsStore") as ClientUnitsStore;
 
+const hud = HUD.Get();
+
 export default abstract class Selection {
 	private static selectionType = SelectionMethod.None;
 	private static boxCornerPosition = new Vector2();
 	public static boxSize = new Vector2();
 	public static holding: boolean;
 
-	public static hoveringUnits = new Set<Selectable>();
-	public static selectedUnits = new Set<Selectable>();
+	public static hoveringUnits = new Set<Unit>();
+	public static selectedUnits = new Set<Unit>();
 
 	public static Init() {
 		// handle if LMB pressed and relesed
@@ -64,8 +67,8 @@ export default abstract class Selection {
 		}
 	}
 
-	private static FindHoveringUnits(): Set<Selectable> {
-		const units = new Set<Selectable>();
+	private static FindHoveringUnits(): Set<Unit> {
+		const units = new Set<Unit>();
 
 		if (Selection.selectionType === SelectionMethod.Box) {
 			for (const unit of unitsStore.GetUnitsInstances()) {
@@ -74,13 +77,13 @@ export default abstract class Selection {
 
 				if (
 					screenPosition.X >=
-						HUD.gui.SelectionBox.Position.X.Offset - math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) &&
+						hud.gui.SelectionBox.Position.X.Offset - math.abs(hud.gui.SelectionBox.Size.X.Offset / 2) &&
 					screenPosition.X <=
-						HUD.gui.SelectionBox.Position.X.Offset + math.abs(HUD.gui.SelectionBox.Size.X.Offset / 2) &&
+						hud.gui.SelectionBox.Position.X.Offset + math.abs(hud.gui.SelectionBox.Size.X.Offset / 2) &&
 					screenPosition.Y >=
-						HUD.gui.SelectionBox.Position.Y.Offset - math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2) &&
+						hud.gui.SelectionBox.Position.Y.Offset - math.abs(hud.gui.SelectionBox.Size.Y.Offset / 2) &&
 					screenPosition.Y <=
-						HUD.gui.SelectionBox.Position.Y.Offset + math.abs(HUD.gui.SelectionBox.Size.Y.Offset / 2)
+						hud.gui.SelectionBox.Position.Y.Offset + math.abs(hud.gui.SelectionBox.Size.Y.Offset / 2)
 				) {
 					units.add(unit);
 				}
@@ -106,17 +109,17 @@ export default abstract class Selection {
 		// define if curently is box selecting or selecting single unit by just hovering
 		Selection.selectionType =
 			boxSize.Magnitude > 3 && Selection.holding ? SelectionMethod.Box : SelectionMethod.Single;
-		HUD.gui.SelectionBox.Visible = Selection.selectionType === SelectionMethod.Box && Selection.holding;
+		hud.gui.SelectionBox.Visible = Selection.selectionType === SelectionMethod.Box && Selection.holding;
 
 		// update selectionBox ui wether
 		if (Selection.selectionType === SelectionMethod.Box) {
 			Selection.selectionType = boxSize.Magnitude > 3 ? SelectionMethod.Box : SelectionMethod.Single;
 			Selection.boxSize = boxSize;
 
-			HUD.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y);
-			HUD.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y);
+			hud.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y);
+			hud.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y);
 		}
-		HUD.gui.SelectionBox.Visible = Selection.selectionType === SelectionMethod.Box;
+		hud.gui.SelectionBox.Visible = Selection.selectionType === SelectionMethod.Box;
 
 		// unhover old units
 		Selection.hoveringUnits.forEach((unit) => {
@@ -142,17 +145,18 @@ export default abstract class Selection {
 		Selection.selectedUnits.clear();
 	}
 
-	public static SelectUnits(units: Set<Selectable>) {
+	public static SelectUnits(units: Set<Unit>) {
 		for (const unit of units) {
 			if (this.selectedUnits.size() >= 100) return;
 			if (this.selectedUnits.has(unit)) return;
 
+			if (unit.data.playerId !== player.UserId) continue;
 			unit.Select(SelectionType.Selected);
 			Selection.selectedUnits.add(unit);
 		}
 	}
 
-	public static DeselectUnits(units: Set<Selectable>) {
+	public static DeselectUnits(units: Set<Unit>) {
 		units.forEach((unit) => {
 			unit.Select(SelectionType.None);
 			const deleted = Selection.selectedUnits.delete(unit);
