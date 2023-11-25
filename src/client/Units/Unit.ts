@@ -97,12 +97,12 @@ export default class Unit {
 	public Select(selectionType: SelectionType) {
 		this.selectionType = selectionType;
 
-		this.Update();
-		if (selectionType === SelectionType.Selected) {
-			RunService.BindToRenderStep(`unit-${this.data.id}-selectionUpdate`, 1, () => this.Update());
-		} else {
-			RunService.UnbindFromRenderStep(`unit-${this.data.id}-selectionUpdate`);
-		}
+		this.UpdateVisuals();
+		// if (selectionType === SelectionType.Selected) {
+		// 	RunService.BindToRenderStep(`unit-${this.data.id}-selectionUpdate`, 1, () => this.Update());
+		// } else {
+		// 	RunService.UnbindFromRenderStep(`unit-${this.data.id}-selectionUpdate`);
+		// }
 	}
 
 	public StartPathfinding(cframe: CFrame) {
@@ -116,7 +116,7 @@ export default class Unit {
 
 		this.movingTo = true;
 		this.model.Humanoid.MoveTo(position);
-		this.pathfinding.EnableVisualisation();
+		this.pathfinding.EnableVisualisation(true);
 	}
 
 	public GetPosition(): Vector3 {
