@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.1.1
+-- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local ReplicatedFirst = _services.ReplicatedFirst
@@ -19,7 +19,7 @@ do
 		return self:constructor(...) or self
 	end
 	function Unit:constructor(unitData)
-		self.movingTo = false
+		self.moving = false
 		self.moveToTries = 0
 		self.selectionType = SelectionType.None
 		self.selectionRadius = 1.5
@@ -63,74 +63,74 @@ do
 		weld.Part1 = self.model.HumanoidRootPart
 		self:Select(SelectionType.None)
 		self.model.Humanoid.MoveToFinished:Connect(function(reached)
-			-- const groundedCurrentWaypoint = new Vector3(
-			-- currentWaypoint.Position.X,
-			-- this.beamAttachment.WorldPosition.Y,
-			-- currentWaypoint.Position.Z,
-			-- );
-			local _targetPosition = self.data.targetPosition
-			local _position = self.model:GetPivot().Position
-			local distanceToTargetPosition = (_targetPosition - _position).Magnitude
-			if distanceToTargetPosition < 1 then
-				if self.pathfinding.active then
-					self.pathfinding:MoveToFinished(true)
-				end
-				self.moveToTries = 0
-				self.movingTo = false
+			local modelPosition = self.model:GetPivot().Position
+			local groundedTargetPosition = Vector3.new(self.data.targetPosition.X, modelPosition.Y, self.data.targetPosition.Z)
+			local distanceToTargetPosition = (groundedTargetPosition - modelPosition).Magnitude
+			if distanceToTargetPosition < 2 then
+				-- unit reached target
+				self:MoveToEnded(true)
 				return nil
 			else
 				self.moveToTries += 1
 			end
-			if self.moveToTries > 10 then
-				warn("UNIT MOVE TO: " .. (self.data.id .. " couldn't get to targetCFrame due to exceed moveToTries limit"))
-				if self.pathfinding.active then
-					self.pathfinding:MoveToFinished(false)
-				end
-				self.moveToTries = 0
-				self.movingTo = false
-				return nil
-			end
-			self:MoveTo(self.data.targetPosition)
+			self:MoveTo(self.data.targetPosition, self.moveToFinishedCallback)
 		end)
 	end
 	function Unit:Select(selectionType)
 		self.selectionType = selectionType
-		self:Update()
-		if selectionType == SelectionType.Selected then
-			RunService:BindToRenderStep("unit-" .. (self.data.id .. "-selectionUpdate"), 1, function()
-				return self:Update()
-			end)
+		self:UpdateVisuals()
+	end
+	function Unit:StartPathfinding(position)
+		local _position = position
+		if typeof(_position) == "Vector3" then
+			self.pathfinding:Start(position)
 		else
-			RunService:UnbindFromRenderStep("unit-" .. (self.data.id .. "-selectionUpdate"))
+			self.pathfinding:StartWithWaypoints(position)
 		end
 	end
-	function Unit:StartPathfinding(cframe)
-		self.pathfinding:Start(cframe)
-	end
-	function Unit:MoveTo(position)
+	function Unit:MoveTo(position, endCallback)
+		self.moveToTries += if self.data.targetPosition == position then 1 else 0
+		if self.moveToTries > 10 then
+			warn("UNIT MOVE TO: " .. (self.data.id .. " couldn't get to targetCFrame due to exceed moveToTries limit"))
+			self:MoveToEnded(false)
+			return nil
+		end
+		self.moveToFinishedCallback = endCallback
+		self.moving = true
 		self.data.targetPosition = position
 		self.data.movementStartTick = tick()
-		-- this.data.movementEndTick = ?????
-		self.movingTo = true
 		self.model.Humanoid:MoveTo(position)
+		RunService:UnbindFromRenderStep(self.data.id .. "-physics")
+		RunService:BindToRenderStep(self.data.id .. "-physics", Enum.RenderPriority.First.Value, function()
+			return self:UpdatePhysics()
+		end)
+	end
+	function Unit:MoveToEnded(success)
+		local _result = self.moveToFinishedCallback
+		if _result ~= nil then
+			_result(success)
+		end
+		self.moveToFinishedCallback = nil
+		self.moveToTries = 0
+		self.moving = false
+		RunService:UnbindFromRenderStep(self.data.id .. "-physics")
 	end
 	function Unit:GetPosition()
 		return self.model:GetPivot().Position
 	end
-	function Unit:Update()
+	function Unit:UpdateVisuals()
 		local selected = self.selectionType == SelectionType.Selected
-		self.pathfinding:EnableVisualisation(selected)
 		self.selectionCircle.Transparency = if self.selectionType == SelectionType.None then 1 else 0.2
 		self.selectionCircle.Color = if selected then Color3.fromRGB(143, 142, 145) else Color3.fromRGB(70, 70, 70)
 	end
 	function Unit:UpdatePhysics()
-		if self.movingTo then
+		if self.moving then
 			local _targetPosition = self.data.targetPosition
 			local _position = self.model:GetPivot().Position
 			local distanceToCurrentWaypoint = (_targetPosition - _position).Magnitude
 			if distanceToCurrentWaypoint > 1 and self.model.Humanoid:GetState() ~= Enum.HumanoidStateType.Running then
-				-- during movement unit stopped and didn't reached target, try to MoveTo again
-				self:MoveTo(self.data.targetPosition)
+				-- during movement, unit stopped and didn't reached target, try to MoveTo again
+				self:MoveTo(self.data.targetPosition, self.moveToFinishedCallback)
 			end
 		end
 	end

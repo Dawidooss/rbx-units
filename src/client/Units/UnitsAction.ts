@@ -118,7 +118,7 @@ export default abstract class UnitsAction {
 		const unitsAndCFrames = UnitsAction.formationSelected.MatchUnitsToCFrames(units, cframes, cframe);
 
 		for (const [unit, cframe] of unitsAndCFrames) {
-			unit.StartPathfinding(cframe);
+			unit.StartPathfinding(cframe.Position);
 		}
 	}
 }

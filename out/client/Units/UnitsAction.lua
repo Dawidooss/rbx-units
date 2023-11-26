@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.1.1
+-- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local RunService = _services.RunService
@@ -129,7 +129,7 @@ do
 		local cframes = UnitsAction.formationSelected:GetCFramesInFormation(units, cframe, spread)
 		local unitsAndCFrames = UnitsAction.formationSelected:MatchUnitsToCFrames(units, cframes, cframe)
 		for unit, cframe in unitsAndCFrames do
-			unit:StartPathfinding(cframe)
+			unit:StartPathfinding(cframe.Position)
 		end
 	end)
 	UnitsAction.enabled = false
