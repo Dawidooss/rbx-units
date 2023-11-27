@@ -1,18 +1,20 @@
-import { PathfindingService, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
+import Maid from "@rbxts/maid";
+import { ReplicatedFirst, Workspace } from "@rbxts/services";
+import UnitMovement from "client/Units/UnitMovement";
 import Pathfinding from "client/Units/Pathfinding";
 import { UnitData } from "shared/DataStore/Stores/UnitsStore";
 import { SelectionType } from "shared/types";
+import Movement from "client/Movement";
 
 export default class Unit {
 	public data: UnitData;
 	public model: UnitModel;
-	public pathfinding: Pathfinding;
 	public alignOrientation: AlignOrientation;
 	public groundAttachment: Attachment;
+	public maid = new Maid();
 
-	public moving = false;
-	private moveToTries = 0;
-	private moveToFinishedCallback: Callback | undefined;
+	public pathfinding: Pathfinding;
+	public movement: UnitMovement;
 
 	public selectionType = SelectionType.None;
 	public selectionRadius = 1.5;
@@ -50,8 +52,6 @@ export default class Unit {
 		this.alignOrientation.Attachment0 = this.groundAttachment;
 		this.alignOrientation.MaxTorque = 1000000;
 
-		this.pathfinding = new Pathfinding(this);
-
 		// selection circle
 		this.selectionCircle = ReplicatedFirst.FindFirstChild("SelectionCircle")!.Clone() as SelectionCirle;
 		this.selectionCircle.Size = new Vector3(
@@ -66,71 +66,16 @@ export default class Unit {
 		weld.Part0 = this.selectionCircle;
 		weld.Part1 = this.model.HumanoidRootPart;
 
+		this.movement = new UnitMovement(this);
+		this.pathfinding = new Pathfinding(this);
+
 		this.Select(SelectionType.None);
-
-		this.model.Humanoid.MoveToFinished.Connect((reached) => {
-			const modelPosition = this.model.GetPivot().Position;
-			const groundedTargetPosition = new Vector3(
-				this.data.targetPosition.X,
-				modelPosition.Y,
-				this.data.targetPosition.Z,
-			);
-			const distanceToTargetPosition = groundedTargetPosition.sub(modelPosition).Magnitude;
-
-			if (distanceToTargetPosition < 2) {
-				// unit reached target
-				this.MoveToEnded(true);
-				return;
-			} else {
-				this.moveToTries += 1;
-			}
-
-			this.MoveTo(this.data.targetPosition, this.moveToFinishedCallback);
-		});
 	}
 
 	public Select(selectionType: SelectionType) {
 		this.selectionType = selectionType;
 
 		this.UpdateVisuals();
-	}
-
-	public StartPathfinding(position: Vector3 | PathWaypoint[]) {
-		if (typeOf(position) === "Vector3") {
-			this.pathfinding.Start(position as Vector3);
-		} else {
-			this.pathfinding.StartWithWaypoints(position as PathWaypoint[]);
-		}
-	}
-
-	public MoveTo(position: Vector3, endCallback?: Callback) {
-		this.moveToTries += this.data.targetPosition === position ? 1 : 0;
-
-		if (this.moveToTries > 10) {
-			warn(`UNIT MOVE TO: ${this.data.id} couldn't get to targetCFrame due to exceed moveToTries limit`);
-			this.MoveToEnded(false);
-			return;
-		}
-		this.moveToFinishedCallback = endCallback;
-		this.moving = true;
-
-		this.data.targetPosition = position;
-		this.data.movementStartTick = tick();
-
-		this.model.Humanoid.MoveTo(position);
-
-		RunService.UnbindFromRenderStep(`${this.data.id}-physics`);
-		RunService.BindToRenderStep(`${this.data.id}-physics`, Enum.RenderPriority.First.Value, () =>
-			this.UpdatePhysics(),
-		);
-	}
-
-	private MoveToEnded(success: boolean) {
-		this.moveToFinishedCallback?.(success);
-		this.moveToFinishedCallback = undefined;
-		this.moveToTries = 0;
-		this.moving = false;
-		RunService.UnbindFromRenderStep(`${this.data.id}-physics`);
 	}
 
 	public GetPosition(): Vector3 {
@@ -144,16 +89,7 @@ export default class Unit {
 		this.selectionCircle.Color = selected ? Color3.fromRGB(143, 142, 145) : Color3.fromRGB(70, 70, 70);
 	}
 
-	private UpdatePhysics() {
-		if (this.moving) {
-			const distanceToCurrentWaypoint = this.data.targetPosition.sub(this.model.GetPivot().Position).Magnitude;
-
-			if (distanceToCurrentWaypoint > 1 && this.model.Humanoid.GetState() !== Enum.HumanoidStateType.Running) {
-				// during movement, unit stopped and didn't reached target, try to MoveTo again
-				this.MoveTo(this.data.targetPosition, this.moveToFinishedCallback);
-			}
-		}
+	public Destroy() {
+		this.maid.DoCleaning();
 	}
-
-	public Destroy() {}
 }
