@@ -18,14 +18,20 @@ do
 	end
 	function ReplicationQueue:Add(key, writeCallback)
 		self.buffer.writeString(key)
-		writeCallback(self.buffer)
+		local _result = writeCallback
+		if _result ~= nil then
+			_result(self.buffer)
+		end
 	end
 	function ReplicationQueue:DumpString()
 		return self.buffer.dumpString()
 	end
 	function ReplicationQueue:Divide(serializedBuffer, chunkCallback)
 		local buffer = BitBuffer(serializedBuffer)
-		while not buffer.isFinished() do
+		print(buffer.getByteLength())
+		-- last char is "-" so end of
+		while buffer.getPointerByte() < buffer.getByteLength() do
+			print(buffer.getPointerByte())
 			local key = buffer.readString()
 			chunkCallback(key, buffer)
 		end

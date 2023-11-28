@@ -44,7 +44,9 @@ do
 			queue:Add("create-unit", function(buffer)
 				unitsStore:Serialize(unitData, buffer)
 			end)
-			replicator:Replicate("create-unit", queue)
+			print("a")
+			replicator:Replicate(queue)
+			print("b")
 		end
 	end
 end

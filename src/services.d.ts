@@ -10,7 +10,7 @@ type SelectionCirle = BasePart & {
 
 type ServerResponse = {
 	status: string;
-	data?: unknown;
+	data?: string;
 	error: boolean;
 	errorMessage?: string;
 };

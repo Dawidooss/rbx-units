@@ -3,6 +3,7 @@ import BitBuffer from "@rbxts/bitbuffer";
 import ReplicationQueue from "../../shared/ReplicationQueue";
 
 export default class ClientReplicator {
+	public replicationEnabled = false;
 	private connections: { [key: string]: (buffer: BitBuffer) => void } = {};
 
 	private static instance: ClientReplicator;
@@ -11,21 +12,24 @@ export default class ClientReplicator {
 
 		Network.BindEvents({
 			"chunked-data": (response: ServerResponse) => {
+				if (!this.replicationEnabled) return;
+
 				const data = response.data as string;
 				if (!data) return;
 
 				ReplicationQueue.Divide(data, (key: string, buffer: BitBuffer) => {
+					print(key);
 					assert(this.connections[key], `Connection ${key} missing in ClientReplicator`);
-
 					this.connections[key](buffer);
 				});
 			},
 		});
 	}
 
-	public async Replicate(key: string, queue: ReplicationQueue): Promise<any[]> {
-		const promise = new Promise<any[]>((resolve, reject) => {
-			const response = Network.InvokeServer(key, queue.DumpString());
+	public async Replicate(queue: ReplicationQueue): Promise<ServerResponse> {
+		const promise = new Promise<ServerResponse>((resolve, reject) => {
+			const response = Network.InvokeServer("chunked-data", queue.DumpString())[0] as ServerResponse;
+			print(response);
 			resolve(response);
 		});
 
@@ -36,18 +40,24 @@ export default class ClientReplicator {
 		this.connections[key] = callback;
 	}
 
-	public FetchAll(): BitBuffer | undefined {
-		let response = Network.InvokeServer("fetch-all")[0] as ServerResponse;
-		if (!response) return;
+	public async FetchAll(): Promise<BitBuffer> {
+		const promise = new Promise<BitBuffer>(async (resolve, reject) => {
+			const queue = new ReplicationQueue();
+			queue.Add("fetch-all");
 
-		const bufferStringified = response.data as string;
-		if (response.error || !bufferStringified) {
-			// TODO notify error
-			return;
-		}
+			const response = await this.Replicate(queue);
 
-		const buffer = BitBuffer(bufferStringified);
-		return buffer;
+			if (response.error || !response.data) {
+				// CRASH GAME!?!? TODO
+				reject();
+				return;
+			}
+
+			const buffer = BitBuffer(response.data);
+			resolve(buffer);
+		});
+
+		return promise;
 	}
 
 	public static Get() {

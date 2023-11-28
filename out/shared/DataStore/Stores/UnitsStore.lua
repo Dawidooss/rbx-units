@@ -47,15 +47,10 @@ do
 	function UnitsStore:Deserialize(buffer)
 		local unitData = {}
 		unitData.id = buffer.readString()
-		local _exp = (unitData.id)
 		unitData.type = buffer.readString()
-		local _exp_1 = (unitData.type)
 		unitData.position = buffer.readVector3()
-		local _exp_2 = (unitData.position)
-		unitData.playerId = buffer.readUInt16()
-		local _exp_3 = (unitData.playerId)
+		unitData.playerId = buffer.readUInt32()
 		unitData.path = {}
-		local _ = (unitData.path)
 		while buffer.readString() == "+" do
 			local position = buffer.readVector3()
 			table.insert(unitData.path, position)

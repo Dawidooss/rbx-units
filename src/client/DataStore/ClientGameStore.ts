@@ -18,10 +18,11 @@ export default class ClientGameStore extends GameStore {
 		this.AddStore(new ClientTeamsStore(this));
 		this.AddStore(new ClientPlayersStore(this));
 		this.AddStore(new ClientUnitsStore(this));
+	}
 
-		const defaultData = replicator.FetchAll();
+	public async Init() {
+		const defaultData = await replicator.FetchAll();
 		if (!defaultData) {
-			// TODO warn
 			return;
 		}
 		this.OverrideAll(defaultData);
@@ -32,6 +33,7 @@ export default class ClientGameStore extends GameStore {
 			const storeName = buffer.readString();
 			this.GetStore(storeName)?.OverrideData(buffer);
 		}
+		replicator.replicationEnabled = true;
 	}
 
 	public static Get() {

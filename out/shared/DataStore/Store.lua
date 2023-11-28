@@ -11,11 +11,7 @@ do
 	end
 	function Store:OverrideData(buffer)
 		table.clear(self.cache)
-		while not buffer.isFinished() do
-			local hasData = buffer.readBits(1)[1] == 1
-			if not hasData then
-				break
-			end
+		while buffer.readString() == "+" do
 			local unitData = self:Deserialize(buffer)
 			self:Add(unitData)
 		end
@@ -27,10 +23,10 @@ do
 		end
 		buffer = _condition
 		for _, data in self.cache do
-			buffer.writeBits(1)
+			buffer.writeString("+")
 			self:Serialize(data, buffer)
 		end
-		buffer.writeBits(0)
+		buffer.writeString("-")
 		return buffer
 	end
 	function Store:Remove(key)

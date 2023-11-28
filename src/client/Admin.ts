@@ -42,7 +42,9 @@ export default abstract class Admin {
 			queue.Add("create-unit", (buffer: BitBuffer) => {
 				unitsStore.Serialize(unitData, buffer);
 			});
-			replicator.Replicate("create-unit", queue);
+			print("a");
+			replicator.Replicate(queue);
+			print("b");
 		}
 	}
 }

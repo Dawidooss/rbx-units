@@ -12,6 +12,7 @@ export default class ServerReplicator {
 
 		Network.BindFunctions({
 			"chunked-data": (player: Player, data: string) => {
+				print(data);
 				ReplicationQueue.Divide(data, (key: string, buffer: BitBuffer) => {
 					assert(this.connections[key], `Connection ${key} missing in ServerReplicator`);
 					return [this.connections[key](player, buffer)];
@@ -48,7 +49,7 @@ export class ServerResponseBuilder {
 	private status: string = "";
 	private error: boolean = false;
 	private errorMessage?: string;
-	private data?: unknown;
+	private data?: string;
 
 	constructor() {}
 
@@ -63,7 +64,7 @@ export class ServerResponseBuilder {
 		return this;
 	}
 
-	public SetData(data: unknown) {
+	public SetData(data: string) {
 		this.data = data;
 		return this;
 	}

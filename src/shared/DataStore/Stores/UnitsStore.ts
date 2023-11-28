@@ -26,13 +26,11 @@ export default class UnitsStore extends Store<UnitData> {
 
 	public Deserialize(buffer: BitBuffer): UnitData {
 		let unitData = {} as UnitData;
-
-		(unitData.id = buffer.readString()),
-			(unitData.type = buffer.readString()),
-			(unitData.position = buffer.readVector3()),
-			(unitData.playerId = buffer.readUInt16()),
-			(unitData.path = []);
-
+		unitData.id = buffer.readString();
+		unitData.type = buffer.readString();
+		unitData.position = buffer.readVector3();
+		unitData.playerId = buffer.readUInt32();
+		unitData.path = [];
 		while (buffer.readString() === "+") {
 			const position = buffer.readVector3();
 			unitData.path.push(position);

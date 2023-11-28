@@ -20,6 +20,7 @@ do
 		ServerReplicator.instance = self
 		Network:BindFunctions({
 			["chunked-data"] = function(player, data)
+				print(data)
 				ReplicationQueue:Divide(data, function(key, buffer)
 					local _arg0 = self.connections[key]
 					local _arg1 = "Connection " .. (key .. " missing in ServerReplicator")

@@ -20,6 +20,7 @@ do
 	function ClientPlayersStore:constructor(gameStore)
 		super.constructor(self, gameStore)
 		replicator:Connect("player-added", function(buffer)
+			print(buffer.dumpString())
 			local playerData = self:Deserialize(buffer)
 			self:Add(playerData)
 		end)

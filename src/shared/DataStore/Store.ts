@@ -13,11 +13,7 @@ export default abstract class Store<T> {
 	public OverrideData(buffer: BitBuffer) {
 		this.cache.clear();
 
-		while (!buffer.isFinished()) {
-			const hasData = buffer.readBits(1)[0] === 1;
-			if (!hasData) {
-				break;
-			}
+		while (buffer.readString() === "+") {
 			const unitData = this.Deserialize(buffer);
 			this.Add(unitData);
 		}
@@ -27,10 +23,10 @@ export default abstract class Store<T> {
 		buffer ||= BitBuffer();
 
 		for (const [_, data] of this.cache) {
-			buffer.writeBits(1);
+			buffer.writeString("+");
 			this.Serialize(data, buffer);
 		}
-		buffer.writeBits(0);
+		buffer.writeString("-");
 
 		return buffer;
 	}

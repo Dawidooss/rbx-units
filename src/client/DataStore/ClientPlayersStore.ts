@@ -10,6 +10,7 @@ export default class ClientPlayersStore extends PlayersStore {
 		super(gameStore);
 
 		replicator.Connect("player-added", (buffer: BitBuffer) => {
+			print(buffer.dumpString());
 			const playerData = this.Deserialize(buffer);
 
 			this.Add(playerData);

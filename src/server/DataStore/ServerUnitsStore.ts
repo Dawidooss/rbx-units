@@ -16,8 +16,13 @@ export default class ServerUnitsStore extends UnitsStore {
 		super(gameStore);
 
 		replicator.Connect("create-unit", (player: Player, buffer: BitBuffer) => {
+			print("create-unit 1");
 			const unitData = this.Deserialize(buffer);
+			print("create-unit 2");
 			this.Add(unitData);
+
+			print(this.cache);
+
 			return new ServerResponseBuilder().Build();
 		});
 

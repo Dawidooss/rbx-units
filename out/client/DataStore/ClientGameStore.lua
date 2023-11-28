@@ -29,13 +29,14 @@ do
 		self:AddStore(ClientTeamsStore.new(self))
 		self:AddStore(ClientPlayersStore.new(self))
 		self:AddStore(ClientUnitsStore.new(self))
-		local defaultData = replicator:FetchAll()
+	end
+	ClientGameStore.Init = TS.async(function(self)
+		local defaultData = TS.await(replicator:FetchAll())
 		if not defaultData then
-			-- TODO warn
 			return nil
 		end
 		self:OverrideAll(defaultData)
-	end
+	end)
 	function ClientGameStore:OverrideAll(buffer)
 		while buffer.getPointerByte() ~= buffer.getByteLength() do
 			local storeName = buffer.readString()
@@ -44,6 +45,7 @@ do
 				_result:OverrideData(buffer)
 			end
 		end
+		replicator.replicationEnabled = true
 	end
 	function ClientGameStore:Get()
 		return ClientGameStore.instance or ClientGameStore.new()
