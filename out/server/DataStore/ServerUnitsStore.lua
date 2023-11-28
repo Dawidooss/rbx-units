@@ -1,7 +1,7 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local ServerResponseBuilder = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").ServerResponseBuilder
-local UnitsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "UnitsStore").default
+local UnitsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "UnitsStoreBase").default
 local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").default
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local replicator = ServerReplicator:Get()
@@ -22,20 +22,29 @@ do
 	function ServerUnitsStore:constructor(gameStore)
 		super.constructor(self, gameStore)
 		replicator:Connect("create-unit", function(player, buffer)
-			print("create-unit 1")
 			local unitData = self:Deserialize(buffer)
-			print("create-unit 2")
-			self:Add(unitData)
-			print(self.cache)
+			local queue = ReplicationQueue.new()
+			self:Add(unitData, queue)
+			replicator:ReplicateAll(queue)
 			return ServerResponseBuilder.new():Build()
 		end)
 		replicator:Connect("unit-movement", function(player, buffer)
 			local unitId = buffer.readString()
+			local position = buffer.readVector3()
 			local unit = self.cache[unitId]
 			if not unit then
-				ServerResponseBuilder.new():SetError("data-missmatch"):Build()
+				return ServerResponseBuilder.new():SetError("data-missmatch"):Build()
 			end
-			-- TODO
+			local path = self:DeserializePath(buffer)
+			unit.path = path
+			unit.position = position
+			local queue = ReplicationQueue.new()
+			queue:Add("unit-movement", function(queueBuffer)
+				queueBuffer.writeString(unitId)
+				queueBuffer.writeVector3(position)
+				self:SerializePath(path, queueBuffer)
+			end)
+			replicator:ReplicateExcept(player, queue)
 			return ServerResponseBuilder.new():Build()
 		end)
 	end

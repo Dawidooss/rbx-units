@@ -1,33 +1,33 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local Store = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Store").default
-local TeamsStore
+local TeamsStoreBase
 do
 	local super = Store
-	TeamsStore = setmetatable({}, {
+	TeamsStoreBase = setmetatable({}, {
 		__tostring = function()
-			return "TeamsStore"
+			return "TeamsStoreBase"
 		end,
 		__index = super,
 	})
-	TeamsStore.__index = TeamsStore
-	function TeamsStore.new(...)
-		local self = setmetatable({}, TeamsStore)
+	TeamsStoreBase.__index = TeamsStoreBase
+	function TeamsStoreBase.new(...)
+		local self = setmetatable({}, TeamsStoreBase)
 		return self:constructor(...) or self
 	end
-	function TeamsStore:constructor(...)
+	function TeamsStoreBase:constructor(...)
 		super.constructor(self, ...)
 		self.name = "TeamsStore"
 	end
-	function TeamsStore:Add(teamData)
+	function TeamsStoreBase:Add(teamData)
 		local teamId = teamData.id
 		local _cache = self.cache
 		local _teamData = teamData
 		_cache[teamId] = _teamData
 		return teamData
 	end
-	function TeamsStore:Serialize(teamData, buffer)
+	function TeamsStoreBase:Serialize(teamData, buffer)
 		local _condition = buffer
 		if not buffer then
 			_condition = BitBuffer()
@@ -38,7 +38,7 @@ do
 		buffer.writeColor3(teamData.color)
 		return buffer
 	end
-	function TeamsStore:Deserialize(buffer)
+	function TeamsStoreBase:Deserialize(buffer)
 		return {
 			id = buffer.readString(),
 			name = buffer.readString(),
@@ -47,5 +47,5 @@ do
 	end
 end
 return {
-	default = TeamsStore,
+	default = TeamsStoreBase,
 }

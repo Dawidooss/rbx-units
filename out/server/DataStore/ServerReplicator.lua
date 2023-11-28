@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Network = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Network")
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
@@ -20,13 +20,26 @@ do
 		ServerReplicator.instance = self
 		Network:BindFunctions({
 			["chunked-data"] = function(player, data)
-				print(data)
+				local mainResponse = ServerResponseBuilder.new()
 				ReplicationQueue:Divide(data, function(key, buffer)
 					local _arg0 = self.connections[key]
 					local _arg1 = "Connection " .. (key .. " missing in ServerReplicator")
 					assert(_arg0, _arg1)
-					return { self.connections[key](player, buffer) }
+					local response = self.connections[key](player, buffer)
+					local _value = response.data
+					if _value ~= "" and _value then
+						mainResponse:SetData(response.data)
+					end
+					local _value_1 = response.errorMessage
+					if _value_1 ~= "" and _value_1 then
+						mainResponse:SetError(response.errorMessage)
+					end
+					local _value_2 = response.status
+					if _value_2 ~= "" and _value_2 then
+						mainResponse:SetStatus(response.status)
+					end
 				end)
+				return { mainResponse }
 			end,
 		})
 	end

@@ -1,22 +1,22 @@
--- Compiled with roblox-ts v2.2.0
-local GameStore
+-- Compiled with roblox-ts v2.1.1
+local GameStoreBase
 do
-	GameStore = {}
-	function GameStore:constructor()
+	GameStoreBase = {}
+	function GameStoreBase:constructor()
 		self.stores = {}
 	end
-	function GameStore:AddStore(store)
+	function GameStoreBase:AddStore(store)
 		local _stores = self.stores
 		local _name = store.name
 		local _store = store
 		_stores[_name] = _store
 	end
-	function GameStore:GetStore(store)
+	function GameStoreBase:GetStore(store)
 		local _stores = self.stores
 		local _store = store
 		return _stores[_store]
 	end
 end
 return {
-	default = GameStore,
+	default = GameStoreBase,
 }

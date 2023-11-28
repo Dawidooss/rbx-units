@@ -1,20 +1,18 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local ContextActionService = _services.ContextActionService
-local Players = _services.Players
 local RunService = _services.RunService
 local UserInputService = _services.UserInputService
-local Workspace = _services.Workspace
 local GetGuiInset = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "GuiInset").default
-local Input = TS.import(script, script.Parent.Parent, "Input").default
-local HUD = TS.import(script, script.Parent, "HUD").default
 local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
-local ClientGameStore = TS.import(script, script.Parent.Parent, "DataStore", "ClientGameStore").default
 local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-local camera = Workspace.CurrentCamera
+local Input = TS.import(script, script.Parent.Parent, "Input").default
+local _Instances = TS.import(script, script.Parent.Parent, "Instances")
+local camera = _Instances.camera
+local player = _Instances.player
+local GUI = TS.import(script, script.Parent, "GUI").default
+local GameStore = TS.import(script, script.Parent.Parent, "DataStore", "GameStore").default
 local SelectionMethod
 do
 	local _inverse = {}
@@ -28,54 +26,68 @@ do
 	SelectionMethod.None = 2
 	_inverse[2] = "None"
 end
-local gameStore = ClientGameStore:Get()
+local input = Input:Get()
+local gameStore = GameStore:Get()
 local unitsStore = gameStore:GetStore("UnitsStore")
-local hud = HUD:Get()
+local gui = GUI:Get()
 local Selection
 do
-	Selection = {}
-	function Selection:constructor()
+	Selection = setmetatable({}, {
+		__tostring = function()
+			return "Selection"
+		end,
+	})
+	Selection.__index = Selection
+	function Selection.new(...)
+		local self = setmetatable({}, Selection)
+		return self:constructor(...) or self
 	end
-	function Selection:Init()
-		-- handle if LMB pressed and relesed
-		ContextActionService:BindAction("selection", function(actionName, state, input)
-			return Selection:SetHolding(state == Enum.UserInputState.Begin)
+	function Selection:constructor()
+		self.boxSize = Vector2.new()
+		self.holding = false
+		self.hoveringUnits = {}
+		self.selectedUnits = {}
+		self.selectionType = SelectionMethod.None
+		self.boxCornerPosition = Vector2.new()
+		Selection.instance = self
+		ContextActionService:BindAction("Selection", function(actionName, state, input)
+			return self:SetHolding(state == Enum.UserInputState.Begin)
 		end, false, Enum.UserInputType.MouseButton1)
 		RunService:BindToRenderStep("Selection", Enum.RenderPriority.Last.Value + 1, function()
-			return Selection:Update()
+			return self:Update()
 		end)
 	end
 	function Selection:SetHolding(state)
 		local _exp = UserInputService:GetMouseLocation()
 		local _vector2 = Vector2.new(0, GetGuiInset())
 		local mouseLocation = _exp - _vector2
-		Selection.holding = state
-		Selection.boxCornerPosition = Vector2.new(mouseLocation.X, mouseLocation.Y)
+		self.holding = state
+		self.boxCornerPosition = Vector2.new(mouseLocation.X, mouseLocation.Y)
 		-- select all hovering units
 		if not state then
-			local shiftHold = Input:IsButtonHolding(Enum.KeyCode.LeftShift)
-			local ctrlHold = Input:IsButtonHolding(Enum.KeyCode.LeftControl)
+			local shiftHold = input:IsButtonHolding(Enum.KeyCode.LeftShift)
+			local ctrlHold = input:IsButtonHolding(Enum.KeyCode.LeftControl)
 			if not shiftHold and not ctrlHold then
-				Selection:ClearSelectedUnits()
+				self:ClearSelectedUnits()
 			end
 			if ctrlHold then
-				Selection:DeselectUnits(self.hoveringUnits)
+				self:DeselectUnits(self.hoveringUnits)
 			else
-				Selection:SelectUnits(self.hoveringUnits)
+				self:SelectUnits(self.hoveringUnits)
 			end
 		end
 	end
 	function Selection:FindHoveringUnits()
 		local units = {}
-		if Selection.selectionType == SelectionMethod.Box then
-			for _, unit in unitsStore:GetUnitsInstances() do
-				local pivot = unit.model:GetPivot()
-				local screenPosition = (camera:WorldToScreenPoint(pivot.Position))
-				if screenPosition.X >= hud.gui.SelectionBox.Position.X.Offset - math.abs(hud.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.X <= hud.gui.SelectionBox.Position.X.Offset + math.abs(hud.gui.SelectionBox.Size.X.Offset / 2) and (screenPosition.Y >= hud.gui.SelectionBox.Position.Y.Offset - math.abs(hud.gui.SelectionBox.Size.Y.Offset / 2) and screenPosition.Y <= hud.gui.SelectionBox.Position.Y.Offset + math.abs(hud.gui.SelectionBox.Size.Y.Offset / 2))) then
+		if self.selectionType == SelectionMethod.Box then
+			for unitId, unit in unitsStore.cache do
+				local position = unit:GetPosition()
+				local screenPosition = (camera:WorldToScreenPoint(position))
+				if screenPosition.X >= gui.hud.SelectionBox.Position.X.Offset - math.abs(gui.hud.SelectionBox.Size.X.Offset / 2) and (screenPosition.X <= gui.hud.SelectionBox.Position.X.Offset + math.abs(gui.hud.SelectionBox.Size.X.Offset / 2) and (screenPosition.Y >= gui.hud.SelectionBox.Position.Y.Offset - math.abs(gui.hud.SelectionBox.Size.Y.Offset / 2) and screenPosition.Y <= gui.hud.SelectionBox.Position.Y.Offset + math.abs(gui.hud.SelectionBox.Size.Y.Offset / 2))) then
 					units[unit] = true
 				end
 			end
-		elseif Selection.selectionType == SelectionMethod.Single then
+		elseif self.selectionType == SelectionMethod.Single then
 			local result = Utils:GetMouseHit()
 			if not result or not result.Instance then
 				return units
@@ -100,24 +112,24 @@ do
 		local _exp = UserInputService:GetMouseLocation()
 		local _vector2 = Vector2.new(0, GetGuiInset())
 		local mouseLocation = _exp - _vector2
-		local hoveringUnits = Selection:FindHoveringUnits()
-		local boxSize = Selection.boxCornerPosition - mouseLocation
-		local _boxCornerPosition = Selection.boxCornerPosition
+		local hoveringUnits = self:FindHoveringUnits()
+		local boxSize = self.boxCornerPosition - mouseLocation
+		local _boxCornerPosition = self.boxCornerPosition
 		local _arg0 = boxSize / 2
 		local middle = _boxCornerPosition - _arg0
 		-- define if curently is box selecting or selecting single unit by just hovering
-		Selection.selectionType = if boxSize.Magnitude > 3 and Selection.holding then SelectionMethod.Box else SelectionMethod.Single
-		hud.gui.SelectionBox.Visible = Selection.selectionType == SelectionMethod.Box and Selection.holding
+		self.selectionType = if boxSize.Magnitude > 3 and self.holding then SelectionMethod.Box else SelectionMethod.Single
+		gui.hud.SelectionBox.Visible = self.selectionType == SelectionMethod.Box and self.holding
 		-- update selectionBox ui wether
-		if Selection.selectionType == SelectionMethod.Box then
-			Selection.selectionType = if boxSize.Magnitude > 3 then SelectionMethod.Box else SelectionMethod.Single
-			Selection.boxSize = boxSize
-			hud.gui.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
-			hud.gui.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y)
+		if self.selectionType == SelectionMethod.Box then
+			self.selectionType = if boxSize.Magnitude > 3 then SelectionMethod.Box else SelectionMethod.Single
+			self.boxSize = boxSize
+			gui.hud.SelectionBox.Size = UDim2.fromOffset(boxSize.X, boxSize.Y)
+			gui.hud.SelectionBox.Position = UDim2.fromOffset(middle.X, middle.Y)
 		end
-		hud.gui.SelectionBox.Visible = Selection.selectionType == SelectionMethod.Box
+		gui.hud.SelectionBox.Visible = self.selectionType == SelectionMethod.Box
 		-- unhover old units
-		local _hoveringUnits = Selection.hoveringUnits
+		local _hoveringUnits = self.hoveringUnits
 		local _arg0_1 = function(unit)
 			local _condition = unit.selectionType == SelectionType.Hovering
 			if _condition then
@@ -140,13 +152,13 @@ do
 		for _v in hoveringUnits do
 			_arg0_2(_v, _v, hoveringUnits)
 		end
-		Selection.hoveringUnits = hoveringUnits
+		self.hoveringUnits = hoveringUnits
 	end
 	function Selection:ClearSelectedUnits()
-		for unit in Selection.selectedUnits do
+		for unit in self.selectedUnits do
 			unit:Select(SelectionType.None)
 		end
-		table.clear(Selection.selectedUnits)
+		table.clear(self.selectedUnits)
 	end
 	function Selection:SelectUnits(units)
 		for unit in units do
@@ -162,18 +174,19 @@ do
 			if self.selectedUnits[unit] ~= nil then
 				return nil
 			end
-			if unit.data.playerId ~= player.UserId then
+			print(unit.playerId)
+			if unit.playerId ~= player.UserId then
 				continue
 			end
 			unit:Select(SelectionType.Selected)
-			Selection.selectedUnits[unit] = true
+			self.selectedUnits[unit] = true
 		end
 	end
 	function Selection:DeselectUnits(units)
 		local _units = units
 		local _arg0 = function(unit)
 			unit:Select(SelectionType.None)
-			local _selectedUnits = Selection.selectedUnits
+			local _selectedUnits = self.selectedUnits
 			local _unit = unit
 			-- ▼ Set.delete ▼
 			local _valueExisted = _selectedUnits[_unit] ~= nil
@@ -185,11 +198,9 @@ do
 			_arg0(_v, _v, _units)
 		end
 	end
-	Selection.selectionType = SelectionMethod.None
-	Selection.boxCornerPosition = Vector2.new()
-	Selection.boxSize = Vector2.new()
-	Selection.hoveringUnits = {}
-	Selection.selectedUnits = {}
+	function Selection:Get()
+		return Selection.instance or Selection.new()
+	end
 end
 return {
 	SelectionMethod = SelectionMethod,

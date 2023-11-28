@@ -1,23 +1,19 @@
 import { RunService } from "@rbxts/services";
 import Movement from "./Movement";
-import Input from "./Input";
-import Selection from "./Units/Selection";
 import Admin from "./Admin";
+import Selection from "./Units/Selection";
+import UnitsReceiver from "./Receivers/UnitsReceiver";
 import UnitsAction from "./Units/UnitsAction";
 import HUDHandler from "./Units/HUDHandler";
-import HUD from "./Units/HUD";
-import ClientGameStore from "./DataStore/ClientGameStore";
 
-const gameStore = ClientGameStore.Get();
-const hud = HUD.Get();
+const unitsReceiver = UnitsReceiver.Get();
 
-HUDHandler.Init();
-Selection.Init();
-Movement.Init();
-Input.Init();
-Admin.Init();
-UnitsAction.Init();
+const movement = Movement.Get();
+const selection = Selection.Get();
+const admin = Admin.Get();
+const unitsAction = UnitsAction.Get();
+const hudHandler = HUDHandler.Get();
 
 RunService.RenderStepped.Connect((deltaTime) => {
-	Movement.Update(deltaTime);
+	movement.Update(deltaTime);
 });

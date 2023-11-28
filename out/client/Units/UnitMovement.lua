@@ -1,12 +1,13 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local HttpService = _services.HttpService
 local RunService = _services.RunService
 local MovementVisualisation = TS.import(script, script.Parent, "MovementVisualisation").default
 local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
-local ClientReplicator = TS.import(script, script.Parent.Parent, "DataStore", "ClientReplicator").default
-local replicator = ClientReplicator:Get()
+local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
+local Replicator = TS.import(script, script.Parent.Parent, "DataStore", "Replicator").default
+local replicator = Replicator:Get()
 local UnitMovement
 do
 	UnitMovement = setmetatable({}, {
@@ -34,23 +35,42 @@ do
 		end
 		self.moveToTries = 0
 		self.movingTo = nil
-		self.unit.data.path = {}
+		self.unit.path = {}
 		self.moving = false
 	end
-	UnitMovement.Move = TS.async(function(self, path, replicate)
+	function UnitMovement:MoveAlongPath(path, queue)
 		local pathId = HttpService:GenerateGUID(false)
 		self.pathId = pathId
-		self.unit.data.path = path
+		self.unit.path = path
 		self.moving = true
-		while self.moving and (self.pathId == pathId and #self.unit.data.path > 0) do
-			local success = TS.await(self:MoveTo(self.unit.data.path[1]))
-			if not success then
-				break
-			end
-			table.remove(self.unit.data.path, 1)
+		local queuePassed = not not queue
+		local _condition = queue
+		if not queue then
+			_condition = ReplicationQueue.new()
 		end
-		self:Stop()
-	end)
+		queue = _condition
+		local _result = queue
+		if _result ~= nil then
+			_result:Add("unit-movement", function(buffer)
+				buffer.writeString(self.unit.id)
+				buffer.writeVector3(self.unit:GetPosition())
+				self.unit.unitsStore:SerializePath(self.unit.path, buffer)
+			end)
+		end
+		if not queuePassed then
+			replicator:Replicate(queue)
+		end
+		spawn(TS.async(function()
+			while self.moving and (self.pathId == pathId and #self.unit.path > 0) do
+				local success = TS.await(self:MoveTo(self.unit.path[1]))
+				if not success then
+					break
+				end
+				table.remove(self.unit.path, 1)
+			end
+			self:Stop()
+		end))
+	end
 	UnitMovement.MoveTo = TS.async(function(self, position)
 		self.moving = true
 		self.movingTo = position
@@ -62,18 +82,6 @@ do
 			self.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[2], 0)
 			local success = TS.await(self:TryMoveTo(position))
 			resolve(success)
-			-- replicate to server if player is owner of this unit
-			-- if (this.unit.data.playerId === Players.LocalPlayer.UserId) {
-			-- 	const buffer = BitBuffer();
-			-- 	buffer.writeString(this.unit.data.id);
-			-- 	buffer.writeVector3(waypoint.Position);
-			-- 	buffer.writeFloat32(tick());
-			-- 	const response = replicator.Replicate("move-unit", buffer.dumpString())[0] as ServerResponse;
-			-- 	if (response.error) {
-			-- 		this.unit.model.PivotTo(currentPosition);
-			-- 		this.Stop(false);
-			-- 	}
-			-- }
 		end))
 		return promise
 	end)
@@ -81,12 +89,11 @@ do
 		self.moveToTries += 1
 		local promise = TS.Promise.new(function(resolve, reject)
 			if self.moveToTries > 10 then
-				warn("UNIT MOVE TO: " .. (self.unit.data.id .. " couldn't get to targetPosition due to exceed moveToTries limit"))
+				warn("UNIT MOVE TO: " .. (self.unit.id .. " couldn't get to targetPosition due to exceed moveToTries limit"))
 				resolve(true)
 				return nil
 			end
 			-- this.Replicate();
-			self.unit.model.Humanoid:MoveTo(position)
 			local _result = self.loopConnection
 			if _result ~= nil then
 				_result:Disconnect()
@@ -96,13 +103,10 @@ do
 				local unitPosition = self.unit:GetPosition()
 				local groundedPosition = Vector3.new(position.X, unitPosition.Y, position.Z)
 				local distance = (groundedPosition - unitPosition).Magnitude
+				self.unit.model.Humanoid:MoveTo(position)
 				if distance <= 2 then
 					conn:Disconnect()
 					resolve(true)
-				elseif self.unit.model.Humanoid:GetState() ~= Enum.HumanoidStateType.Running then
-					conn:Disconnect()
-					local success = TS.await(self:TryMoveTo(position))
-					resolve(success)
 				end
 			end))
 			self.loopConnection = conn

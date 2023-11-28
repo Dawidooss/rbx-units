@@ -4,7 +4,7 @@ import ReplicationQueue from "shared/ReplicationQueue";
 import { Players } from "@rbxts/services";
 
 export default class ServerReplicator {
-	private connections: { [key: string]: (player: Player, buffer: BitBuffer) => void } = {};
+	private connections: { [key: string]: (player: Player, buffer: BitBuffer) => ServerResponse } = {};
 
 	private static instance: ServerReplicator;
 	constructor() {
@@ -12,11 +12,17 @@ export default class ServerReplicator {
 
 		Network.BindFunctions({
 			"chunked-data": (player: Player, data: string) => {
-				print(data);
+				const mainResponse = new ServerResponseBuilder();
 				ReplicationQueue.Divide(data, (key: string, buffer: BitBuffer) => {
 					assert(this.connections[key], `Connection ${key} missing in ServerReplicator`);
-					return [this.connections[key](player, buffer)];
+					const response = this.connections[key](player, buffer);
+
+					if (response.data) mainResponse.SetData(response.data);
+					if (response.errorMessage) mainResponse.SetError(response.errorMessage);
+					if (response.status) mainResponse.SetStatus(response.status);
 				});
+
+				return [mainResponse];
 			},
 		});
 	}

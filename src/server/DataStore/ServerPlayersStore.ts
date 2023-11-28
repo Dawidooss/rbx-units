@@ -1,6 +1,6 @@
 import Replicator from "./ServerReplicator";
 import ServerGameStore from "./ServerGameStore";
-import PlayersStore, { PlayerData } from "shared/DataStore/Stores/PlayersStore";
+import PlayersStore, { PlayerData } from "shared/DataStore/Stores/PlayersStoreBase";
 import BitBuffer from "@rbxts/bitbuffer";
 import ServerReplicator from "./ServerReplicator";
 import ReplicationQueue from "shared/ReplicationQueue";
@@ -34,7 +34,7 @@ export default class ServerPlayersStore extends PlayersStore {
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
 		queue.Add("player-added", (buffer: BitBuffer) => {
-			buffer.writeUInt32(tonumber(playerId) || 0);
+			buffer.writeString(playerId);
 		});
 
 		if (!queuePassed) {

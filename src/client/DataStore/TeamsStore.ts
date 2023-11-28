@@ -1,13 +1,13 @@
-import ClientGameStore from "./ClientGameStore";
-import Replicator from "./ClientReplicator";
-import TeamsStore from "shared/DataStore/Stores/TeamStore";
+import ClientGameStore from "./GameStore";
 import BitBuffer = require("@rbxts/bitbuffer");
-import ClientReplicator from "./ClientReplicator";
+import Replicator from "./Replicator";
+import TeamsStoreBase from "shared/DataStore/Stores/TeamStoreBase";
+import GameStore from "./GameStore";
 
-const replicator = ClientReplicator.Get();
+const replicator = Replicator.Get();
 
-export default class ClientTeamsStore extends TeamsStore {
-	constructor(gameStore: ClientGameStore) {
+export default class TeamsStore extends TeamsStoreBase {
+	constructor(gameStore: GameStore) {
 		super(gameStore);
 
 		replicator.Connect("team-added", (buffer: BitBuffer) => {

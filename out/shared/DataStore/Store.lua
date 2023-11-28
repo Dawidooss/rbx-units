@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local Store
@@ -10,7 +10,7 @@ do
 		self.gameStore = gameStore
 	end
 	function Store:OverrideData(buffer)
-		table.clear(self.cache)
+		self:Clear()
 		while buffer.readString() == "+" do
 			local unitData = self:Deserialize(buffer)
 			self:Add(unitData)
@@ -33,6 +33,9 @@ do
 		local _cache = self.cache
 		local _key = key
 		_cache[_key] = nil
+	end
+	function Store:Clear()
+		table.clear(self.cache)
 	end
 end
 return {

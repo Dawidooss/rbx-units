@@ -1,8 +1,8 @@
 import Replicator, { ServerResponseBuilder } from "./ServerReplicator";
-import { TeamData } from "shared/DataStore/Stores/TeamStore";
+import { TeamData } from "shared/DataStore/Stores/TeamStoreBase";
 import ServerGameStore from "./ServerGameStore";
-import PlayersStore, { PlayerData } from "shared/DataStore/Stores/PlayersStore";
-import UnitsStore, { UnitData } from "shared/DataStore/Stores/UnitsStore";
+import PlayersStore, { PlayerData } from "shared/DataStore/Stores/PlayersStoreBase";
+import UnitsStore, { UnitData } from "shared/DataStore/Stores/UnitsStoreBase";
 import Utils from "shared/Utils";
 import BitBuffer from "@rbxts/bitbuffer";
 import ServerReplicator from "./ServerReplicator";
@@ -16,25 +16,37 @@ export default class ServerUnitsStore extends UnitsStore {
 		super(gameStore);
 
 		replicator.Connect("create-unit", (player: Player, buffer: BitBuffer) => {
-			print("create-unit 1");
 			const unitData = this.Deserialize(buffer);
-			print("create-unit 2");
-			this.Add(unitData);
 
-			print(this.cache);
+			const queue = new ReplicationQueue();
+			this.Add(unitData, queue);
+
+			replicator.ReplicateAll(queue);
 
 			return new ServerResponseBuilder().Build();
 		});
 
 		replicator.Connect("unit-movement", (player: Player, buffer: BitBuffer) => {
 			const unitId = buffer.readString();
+			const position = buffer.readVector3();
 			const unit = this.cache.get(unitId);
 
 			if (!unit) {
-				new ServerResponseBuilder().SetError("data-missmatch").Build();
+				return new ServerResponseBuilder().SetError("data-missmatch").Build();
 			}
 
-			// TODO
+			const path = this.DeserializePath(buffer);
+			unit.path = path;
+			unit.position = position;
+
+			const queue = new ReplicationQueue();
+			queue.Add("unit-movement", (queueBuffer: BitBuffer) => {
+				queueBuffer.writeString(unitId);
+				queueBuffer.writeVector3(position);
+				this.SerializePath(path, queueBuffer);
+			});
+
+			replicator.ReplicateExcept(player, queue);
 
 			return new ServerResponseBuilder().Build();
 		});

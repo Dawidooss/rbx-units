@@ -2,23 +2,21 @@ import UnitsAction from "./UnitsAction";
 import LineFormation from "./Formations/LineFormation";
 import SquareFormation from "./Formations/SquareFormation";
 import CircleFormation from "./Formations/CircleFormation";
-import Selection from "./Selection";
-import HUD from "./HUD";
+import GUI from "./GUI";
 
-export default abstract class HUDHandler {
-	public static hud: HUD;
+const gui = GUI.Get();
+const unitsAction = UnitsAction.Get();
 
-	public static Init() {
-		HUDHandler.hud = HUD.Get();
+export default class HUDHandler {
+	private static instance: HUDHandler;
+	constructor() {
+		HUDHandler.instance = this;
+		gui.hud.Formations.Line.MouseButton1Click.Connect(() => unitsAction.SetFormation(new LineFormation()));
+		gui.hud.Formations.Square.MouseButton1Click.Connect(() => unitsAction.SetFormation(new SquareFormation()));
+		gui.hud.Formations.Circle.MouseButton1Click.Connect(() => unitsAction.SetFormation(new CircleFormation()));
+	}
 
-		HUDHandler.hud.gui.Formations.Line.MouseButton1Click.Connect(() =>
-			UnitsAction.SetFormation(new LineFormation()),
-		);
-		HUDHandler.hud.gui.Formations.Square.MouseButton1Click.Connect(() =>
-			UnitsAction.SetFormation(new SquareFormation()),
-		);
-		HUDHandler.hud.gui.Formations.Circle.MouseButton1Click.Connect(() =>
-			UnitsAction.SetFormation(new CircleFormation()),
-		);
+	public static Get() {
+		return HUDHandler.instance || new HUDHandler();
 	}
 }

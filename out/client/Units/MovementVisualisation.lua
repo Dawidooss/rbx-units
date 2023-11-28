@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local ReplicatedFirst = _services.ReplicatedFirst
@@ -54,10 +54,10 @@ do
 				else
 					_shouldIncrement = true
 				end
-				if not (pathIndex < #self.unit.data.path) then
+				if not (pathIndex < #self.unit.path) then
 					break
 				end
-				local position = self.unit.data.path[pathIndex + 1]
+				local position = self.unit.path[pathIndex + 1]
 				local length = (previousVisualisationAtt.WorldPosition - position).Magnitude
 				local visualisationPart = self.visualisationPart:Clone()
 				local _fn = Utils
@@ -75,7 +75,7 @@ do
 				visualisationPart:PivotTo(cframe)
 				visualisationPart.Beam.Attachment1 = previousVisualisationAtt
 				visualisationPart.Beam.TextureLength = length
-				visualisationPart.Transparency = if pathIndex == #self.unit.data.path - 1 then 0 else 1
+				visualisationPart.Transparency = if pathIndex == #self.unit.path - 1 then 0 else 1
 				visualisationPart.Parent = self.visualisation.Positions
 				previousVisualisationAtt = visualisationPart.Attachment
 			end

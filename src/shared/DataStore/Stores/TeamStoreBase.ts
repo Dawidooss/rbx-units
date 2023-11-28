@@ -1,7 +1,7 @@
 import BitBuffer from "@rbxts/bitbuffer";
 import Store from "../Store";
 
-export default class TeamsStore extends Store<TeamData> {
+export default class TeamsStoreBase extends Store<TeamData> {
 	public name = "TeamsStore";
 
 	public Add(teamData: TeamData): TeamData {

@@ -1,14 +1,11 @@
 import { PathfindingService } from "@rbxts/services";
 import Unit from "./Unit";
-import ClientReplicator from "client/DataStore/ClientReplicator";
 
 const agentParams = {
 	AgentCanJump: false,
 	WaypointSpacing: math.huge,
 	AgentRadius: 4,
 };
-
-const replicator = ClientReplicator.Get();
 
 export default class Pathfinding {
 	public active = false;
@@ -22,21 +19,25 @@ export default class Pathfinding {
 		this.path = PathfindingService.CreatePath(agentParams);
 	}
 
-	public ComputePath(position: Vector3): Vector3[] {
-		this.path.ComputeAsync(this.unit.GetPosition(), position);
+	public async ComputePath(position: Vector3): Promise<[Unit, Vector3[]]> {
+		const promise = new Promise<[Unit, Vector3[]]>((resolve, reject) => {
+			this.path.ComputeAsync(this.unit.GetPosition(), position);
 
-		if (this.path.Status !== Enum.PathStatus.Success && this.path.Status !== Enum.PathStatus.ClosestNoPath) {
-			return [];
-		}
+			if (this.path.Status !== Enum.PathStatus.Success && this.path.Status !== Enum.PathStatus.ClosestNoPath) {
+				return reject();
+			}
 
-		let path: Vector3[] = [];
-		let waypoints = this.path.GetWaypoints();
-		waypoints.shift();
+			let path: Vector3[] = [];
+			let waypoints = this.path.GetWaypoints();
+			waypoints.shift();
 
-		for (const waypoint of waypoints) {
-			path.push(waypoint.Position);
-		}
+			for (const waypoint of waypoints) {
+				path.push(waypoint.Position);
+			}
 
-		return path;
+			resolve([this.unit, path]);
+		});
+
+		return promise;
 	}
 }

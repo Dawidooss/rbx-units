@@ -1,45 +1,45 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Store = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Store").default
 local Players = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Players
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
-local PlayersStore
+local PlayersStoreBase
 do
 	local super = Store
-	PlayersStore = setmetatable({}, {
+	PlayersStoreBase = setmetatable({}, {
 		__tostring = function()
-			return "PlayersStore"
+			return "PlayersStoreBase"
 		end,
 		__index = super,
 	})
-	PlayersStore.__index = PlayersStore
-	function PlayersStore.new(...)
-		local self = setmetatable({}, PlayersStore)
+	PlayersStoreBase.__index = PlayersStoreBase
+	function PlayersStoreBase.new(...)
+		local self = setmetatable({}, PlayersStoreBase)
 		return self:constructor(...) or self
 	end
-	function PlayersStore:constructor(...)
+	function PlayersStoreBase:constructor(...)
 		super.constructor(self, ...)
 		self.name = "PlayersStore"
 	end
-	function PlayersStore:Add(playerData)
+	function PlayersStoreBase:Add(playerData)
 		local _cache = self.cache
 		local _arg0 = tostring(playerData.player.UserId)
 		local _playerData = playerData
 		_cache[_arg0] = _playerData
 		return playerData
 	end
-	function PlayersStore:Serialize(playerData, buffer)
+	function PlayersStoreBase:Serialize(playerData, buffer)
 		local _condition = buffer
 		if not buffer then
 			_condition = BitBuffer()
 		end
 		buffer = _condition
-		buffer.writeUInt32(playerData.player.UserId)
+		buffer.writeString(tostring(playerData.player.UserId))
 		buffer.writeString(playerData.teamId)
 		return buffer
 	end
-	function PlayersStore:Deserialize(buffer)
-		local playerId = buffer.readUInt32()
+	function PlayersStoreBase:Deserialize(buffer)
+		local playerId = tonumber(buffer.readString())
 		local player = Players:GetPlayerByUserId(playerId)
 		return {
 			player = player,
@@ -48,5 +48,5 @@ do
 	end
 end
 return {
-	default = PlayersStore,
+	default = PlayersStoreBase,
 }

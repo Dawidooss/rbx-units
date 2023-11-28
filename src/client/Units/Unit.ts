@@ -2,12 +2,16 @@ import Maid from "@rbxts/maid";
 import { ReplicatedFirst, Workspace } from "@rbxts/services";
 import UnitMovement from "client/Units/UnitMovement";
 import Pathfinding from "client/Units/Pathfinding";
-import { UnitData } from "shared/DataStore/Stores/UnitsStore";
 import { SelectionType } from "shared/types";
-import Movement from "client/Movement";
+import { UnitData } from "shared/DataStore/Stores/UnitsStoreBase";
+import { player } from "client/Instances";
+import GameStore from "client/DataStore/GameStore";
+import UnitsStore from "client/DataStore/UnitsStore";
 
-export default class Unit {
-	public data: UnitData;
+export default class Unit extends UnitData {
+	public gameStore: GameStore;
+	public unitsStore: UnitsStore;
+
 	public model: UnitModel;
 	public alignOrientation: AlignOrientation;
 	public groundAttachment: Attachment;
@@ -20,12 +24,22 @@ export default class Unit {
 	public selectionRadius = 1.5;
 	private selectionCircle: SelectionCirle;
 
-	constructor(unitData: UnitData) {
-		this.data = unitData;
+	constructor(
+		gameStore: GameStore,
+		id: string,
+		name: string,
+		position: Vector3,
+		playerId?: number,
+		path?: Vector3[],
+	) {
+		super(id, name, position, playerId || player.UserId, path);
 
-		this.model = ReplicatedFirst.Units[this.data.type].Clone();
-		this.model.Name = this.data.type;
-		this.model.PivotTo(new CFrame(unitData.position));
+		this.gameStore = gameStore;
+		this.unitsStore = gameStore.GetStore("UnitsStore") as UnitsStore;
+
+		this.model = ReplicatedFirst.Units[this.name].Clone();
+		this.model.Name = this.name;
+		this.model.PivotTo(new CFrame(this.position));
 		this.model.Parent = Workspace.WaitForChild("UnitsCache");
 
 		// disabling not used humanoid states to save memory
@@ -76,6 +90,11 @@ export default class Unit {
 		this.selectionType = selectionType;
 
 		this.UpdateVisuals();
+	}
+
+	public UpdatePosition(position: Vector3) {
+		this.model.PivotTo(new CFrame(position));
+		this.position = position;
 	}
 
 	public GetPosition(): Vector3 {

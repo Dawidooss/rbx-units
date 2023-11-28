@@ -1,10 +1,10 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local ReplicatedFirst = _services.ReplicatedFirst
 local Workspace = _services.Workspace
 local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
-local camera = Workspace.CurrentCamera
+local camera = TS.import(script, script.Parent.Parent.Parent, "Instances").camera
 local Formation
 do
 	Formation = {}

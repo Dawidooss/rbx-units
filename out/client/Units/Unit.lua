@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Maid = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "maid", "Maid")
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
@@ -7,26 +7,39 @@ local Workspace = _services.Workspace
 local UnitMovement = TS.import(script, script.Parent, "UnitMovement").default
 local Pathfinding = TS.import(script, script.Parent, "Pathfinding").default
 local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
+local UnitData = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "UnitsStoreBase").UnitData
+local player = TS.import(script, script.Parent.Parent, "Instances").player
 local Unit
 do
+	local super = UnitData
 	Unit = setmetatable({}, {
 		__tostring = function()
 			return "Unit"
 		end,
+		__index = super,
 	})
 	Unit.__index = Unit
 	function Unit.new(...)
 		local self = setmetatable({}, Unit)
 		return self:constructor(...) or self
 	end
-	function Unit:constructor(unitData)
+	function Unit:constructor(gameStore, id, name, position, playerId, path)
+		local _exp = id
+		local _exp_1 = name
+		local _exp_2 = position
+		local _condition = playerId
+		if not (_condition ~= 0 and (_condition == _condition and _condition)) then
+			_condition = player.UserId
+		end
+		super.constructor(self, _exp, _exp_1, _exp_2, _condition, path)
 		self.maid = Maid.new()
 		self.selectionType = SelectionType.None
 		self.selectionRadius = 1.5
-		self.data = unitData
-		self.model = ReplicatedFirst.Units[self.data.type]:Clone()
-		self.model.Name = self.data.type
-		self.model:PivotTo(CFrame.new(unitData.position))
+		self.gameStore = gameStore
+		self.unitsStore = gameStore:GetStore("UnitsStore")
+		self.model = ReplicatedFirst.Units[self.name]:Clone()
+		self.model.Name = self.name
+		self.model:PivotTo(CFrame.new(self.position))
 		self.model.Parent = Workspace:WaitForChild("UnitsCache")
 		-- disabling not used humanoid states to save memory
 		-- this.model.Humanoid.SetStateEnabled(Enum.HumanoidStateType.FallingDown, false);
@@ -53,9 +66,9 @@ do
 		self.selectionCircle = ReplicatedFirst:FindFirstChild("SelectionCircle"):Clone()
 		self.selectionCircle.Size = Vector3.new(self.selectionCircle.Size.X, self.selectionRadius * 2, self.selectionRadius * 2)
 		local _fn = self.selectionCircle
-		local _exp = self.model:GetPivot()
+		local _exp_3 = self.model:GetPivot()
 		local _arg0 = CFrame.Angles(0, 0, math.pi / 2)
-		_fn:PivotTo(_exp * _arg0)
+		_fn:PivotTo(_exp_3 * _arg0)
 		self.selectionCircle.Parent = self.model
 		local weld = Instance.new("WeldConstraint", self.selectionCircle)
 		weld.Part0 = self.selectionCircle
@@ -67,6 +80,10 @@ do
 	function Unit:Select(selectionType)
 		self.selectionType = selectionType
 		self:UpdateVisuals()
+	end
+	function Unit:UpdatePosition(position)
+		self.model:PivotTo(CFrame.new(position))
+		self.position = position
 	end
 	function Unit:GetPosition()
 		return self.model:GetPivot().Position

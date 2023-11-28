@@ -2,23 +2,21 @@ import Network from "shared/Network";
 import BitBuffer from "@rbxts/bitbuffer";
 import ReplicationQueue from "../../shared/ReplicationQueue";
 
-export default class ClientReplicator {
+export default class Replicator {
 	public replicationEnabled = false;
 	private connections: { [key: string]: (buffer: BitBuffer) => void } = {};
 
-	private static instance: ClientReplicator;
+	private static instance: Replicator;
 	constructor() {
-		ClientReplicator.instance = this;
+		Replicator.instance = this;
 
 		Network.BindEvents({
 			"chunked-data": (response: ServerResponse) => {
 				if (!this.replicationEnabled) return;
-
 				const data = response.data as string;
 				if (!data) return;
 
 				ReplicationQueue.Divide(data, (key: string, buffer: BitBuffer) => {
-					print(key);
 					assert(this.connections[key], `Connection ${key} missing in ClientReplicator`);
 					this.connections[key](buffer);
 				});
@@ -29,7 +27,6 @@ export default class ClientReplicator {
 	public async Replicate(queue: ReplicationQueue): Promise<ServerResponse> {
 		const promise = new Promise<ServerResponse>((resolve, reject) => {
 			const response = Network.InvokeServer("chunked-data", queue.DumpString())[0] as ServerResponse;
-			print(response);
 			resolve(response);
 		});
 
@@ -48,7 +45,7 @@ export default class ClientReplicator {
 			const response = await this.Replicate(queue);
 
 			if (response.error || !response.data) {
-				// CRASH GAME!?!? TODO
+				// CRASH GAME!?!? TODO:
 				reject();
 				return;
 			}
@@ -61,6 +58,6 @@ export default class ClientReplicator {
 	}
 
 	public static Get() {
-		return ClientReplicator.instance || new ClientReplicator();
+		return Replicator.instance || new Replicator();
 	}
 }

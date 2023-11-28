@@ -1,26 +1,42 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local UnitsAction = TS.import(script, script.Parent, "UnitsAction").default
 local LineFormation = TS.import(script, script.Parent, "Formations", "LineFormation").default
 local SquareFormation = TS.import(script, script.Parent, "Formations", "SquareFormation").default
 local CircleFormation = TS.import(script, script.Parent, "Formations", "CircleFormation").default
-local HUD = TS.import(script, script.Parent, "HUD").default
+local GUI = TS.import(script, script.Parent, "GUI").default
+local gui = GUI:Get()
+local unitsAction = UnitsAction:Get()
 local HUDHandler
 do
-	HUDHandler = {}
-	function HUDHandler:constructor()
+	HUDHandler = setmetatable({}, {
+		__tostring = function()
+			return "HUDHandler"
+		end,
+	})
+	HUDHandler.__index = HUDHandler
+	function HUDHandler.new(...)
+		local self = setmetatable({}, HUDHandler)
+		return self:constructor(...) or self
 	end
-	function HUDHandler:Init()
-		HUDHandler.hud = HUD:Get()
-		HUDHandler.hud.gui.Formations.Line.MouseButton1Click:Connect(function()
-			return UnitsAction:SetFormation(LineFormation.new())
+	function HUDHandler:constructor()
+		HUDHandler.instance = self
+		gui.hud.Formations.Line.MouseButton1Click:Connect(function()
+			return unitsAction:SetFormation(LineFormation.new())
 		end)
-		HUDHandler.hud.gui.Formations.Square.MouseButton1Click:Connect(function()
-			return UnitsAction:SetFormation(SquareFormation.new())
+		gui.hud.Formations.Square.MouseButton1Click:Connect(function()
+			return unitsAction:SetFormation(SquareFormation.new())
 		end)
-		HUDHandler.hud.gui.Formations.Circle.MouseButton1Click:Connect(function()
-			return UnitsAction:SetFormation(CircleFormation.new())
+		gui.hud.Formations.Circle.MouseButton1Click:Connect(function()
+			return unitsAction:SetFormation(CircleFormation.new())
 		end)
+	end
+	function HUDHandler:Get()
+		local _condition = HUDHandler.instance
+		if not (_condition ~= 0 and (_condition == _condition and (_condition ~= "" and _condition))) then
+			_condition = HUDHandler.new()
+		end
+		return _condition
 	end
 end
 return {

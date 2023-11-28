@@ -1,4 +1,4 @@
-import { StarterGui, Workspace } from "@rbxts/services";
+import { Workspace } from "@rbxts/services";
 import Formation from "./Formation";
 import Utils from "shared/Utils";
 import Unit from "../Unit";

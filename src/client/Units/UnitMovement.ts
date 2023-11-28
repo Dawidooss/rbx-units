@@ -1,11 +1,12 @@
-import { HttpService, Players, RunService, Workspace } from "@rbxts/services";
+import { HttpService, RunService } from "@rbxts/services";
 import Unit from "./Unit";
 import MovementVisualisation from "./MovementVisualisation";
 import { SelectionType } from "shared/types";
 import BitBuffer from "@rbxts/bitbuffer";
-import ClientReplicator from "client/DataStore/ClientReplicator";
+import ReplicationQueue from "shared/ReplicationQueue";
+import Replicator from "client/DataStore/Replicator";
 
-const replicator = ClientReplicator.Get();
+const replicator = Replicator.Get();
 
 export default class UnitMovement {
 	public unit: Unit;
@@ -28,23 +29,39 @@ export default class UnitMovement {
 		this.loopConnection?.Disconnect();
 		this.moveToTries = 0;
 		this.movingTo = undefined;
-		this.unit.data.path = [];
+		this.unit.path = [];
 		this.moving = false;
 	}
 
-	public async Move(path: Vector3[], replicate: boolean) {
+	public MoveAlongPath(path: Vector3[], queue?: ReplicationQueue) {
 		const pathId = HttpService.GenerateGUID(false);
 		this.pathId = pathId;
-		this.unit.data.path = path;
+		this.unit.path = path;
 		this.moving = true;
 
-		while (this.moving && this.pathId === pathId && this.unit.data.path.size() > 0) {
-			const success = await this.MoveTo(this.unit.data.path[0]);
-			if (!success) break;
+		const queuePassed = !!queue;
+		queue ||= new ReplicationQueue();
 
-			this.unit.data.path.shift();
+		queue?.Add("unit-movement", (buffer: BitBuffer) => {
+			buffer.writeString(this.unit.id);
+			buffer.writeVector3(this.unit.GetPosition());
+
+			this.unit.unitsStore.SerializePath(this.unit.path, buffer);
+		});
+
+		if (!queuePassed) {
+			replicator.Replicate(queue);
 		}
-		this.Stop();
+
+		spawn(async () => {
+			while (this.moving && this.pathId === pathId && this.unit.path.size() > 0) {
+				const success = await this.MoveTo(this.unit.path[0]);
+				if (!success) break;
+
+				this.unit.path.shift();
+			}
+			this.Stop();
+		});
 	}
 
 	private async MoveTo(position: Vector3): Promise<boolean> {
@@ -62,20 +79,6 @@ export default class UnitMovement {
 
 			const success = await this.TryMoveTo(position);
 			resolve(success);
-
-			// replicate to server if player is owner of this unit
-			// if (this.unit.data.playerId === Players.LocalPlayer.UserId) {
-			// 	const buffer = BitBuffer();
-			// 	buffer.writeString(this.unit.data.id);
-			// 	buffer.writeVector3(waypoint.Position);
-			// 	buffer.writeFloat32(tick());
-			// 	const response = replicator.Replicate("move-unit", buffer.dumpString())[0] as ServerResponse;
-
-			// 	if (response.error) {
-			// 		this.unit.model.PivotTo(currentPosition);
-			// 		this.Stop(false);
-			// 	}
-			// }
 		});
 
 		return promise;
@@ -86,28 +89,24 @@ export default class UnitMovement {
 
 		const promise = new Promise<boolean>((resolve, reject) => {
 			if (this.moveToTries > 10) {
-				warn(
-					`UNIT MOVE TO: ${this.unit.data.id} couldn't get to targetPosition due to exceed moveToTries limit`,
-				);
+				warn(`UNIT MOVE TO: ${this.unit.id} couldn't get to targetPosition due to exceed moveToTries limit`);
 				resolve(true);
 				return;
 			}
 
 			// this.Replicate();
-			this.unit.model.Humanoid.MoveTo(position);
 
 			this.loopConnection?.Disconnect();
 			const conn = RunService.Heartbeat.Connect(async () => {
 				const unitPosition = this.unit.GetPosition();
 				const groundedPosition = new Vector3(position.X, unitPosition.Y, position.Z);
 				const distance = groundedPosition.sub(unitPosition).Magnitude;
+
+				this.unit.model.Humanoid.MoveTo(position);
+
 				if (distance <= 2) {
 					conn.Disconnect();
 					resolve(true);
-				} else if (this.unit.model.Humanoid.GetState() !== Enum.HumanoidStateType.Running) {
-					conn.Disconnect();
-					const success = await this.TryMoveTo(position);
-					resolve(success);
 				}
 			});
 			this.loopConnection = conn;

@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local ReplicationQueue
@@ -28,10 +28,8 @@ do
 	end
 	function ReplicationQueue:Divide(serializedBuffer, chunkCallback)
 		local buffer = BitBuffer(serializedBuffer)
-		print(buffer.getByteLength())
 		-- last char is "-" so end of
 		while buffer.getPointerByte() < buffer.getByteLength() do
-			print(buffer.getPointerByte())
 			local key = buffer.readString()
 			chunkCallback(key, buffer)
 		end

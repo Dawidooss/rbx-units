@@ -1,4 +1,4 @@
-import GameStore from "./Stores/GameStore";
+import GameStore from "./Stores/GameStoreBase";
 import BitBuffer from "@rbxts/bitbuffer";
 
 export default abstract class Store<T> {
@@ -11,7 +11,7 @@ export default abstract class Store<T> {
 	}
 
 	public OverrideData(buffer: BitBuffer) {
-		this.cache.clear();
+		this.Clear();
 
 		while (buffer.readString() === "+") {
 			const unitData = this.Deserialize(buffer);
@@ -33,6 +33,10 @@ export default abstract class Store<T> {
 
 	public Remove(key: string) {
 		this.cache.delete(key);
+	}
+
+	public Clear() {
+		this.cache.clear();
 	}
 
 	abstract Add(value: T): void;

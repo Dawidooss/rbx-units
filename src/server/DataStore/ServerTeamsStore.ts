@@ -1,4 +1,4 @@
-import TeamsStore, { TeamData } from "shared/DataStore/Stores/TeamStore";
+import TeamsStore, { TeamData } from "shared/DataStore/Stores/TeamStoreBase";
 import ServerGameStore from "./ServerGameStore";
 import BitBuffer from "@rbxts/bitbuffer";
 import ServerReplicator from "./ServerReplicator";

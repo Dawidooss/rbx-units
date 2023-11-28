@@ -1,6 +1,6 @@
--- Compiled with roblox-ts v2.2.0
+-- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local PlayersStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "PlayersStore").default
+local PlayersStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "PlayersStoreBase").default
 local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").default
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local replicator = ServerReplicator:Get()
@@ -46,12 +46,7 @@ do
 		end
 		queue = _condition
 		queue:Add("player-added", function(buffer)
-			local _fn = buffer
-			local _condition_1 = tonumber(playerId)
-			if not (_condition_1 ~= 0 and (_condition_1 == _condition_1 and _condition_1)) then
-				_condition_1 = 0
-			end
-			_fn.writeUInt32(_condition_1)
+			buffer.writeString(playerId)
 		end)
 		if not queuePassed then
 			replicator:ReplicateAll(queue)

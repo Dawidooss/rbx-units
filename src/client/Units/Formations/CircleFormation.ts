@@ -1,9 +1,8 @@
-import { ReplicatedFirst, Workspace } from "@rbxts/services";
+import { Workspace } from "@rbxts/services";
 import Formation from "./Formation";
 import Utils from "shared/Utils";
 import Unit from "../Unit";
-
-const camera = Workspace.CurrentCamera!;
+import { camera } from "client/Instances";
 
 export default class CircleFormation extends Formation {
 	constructor() {

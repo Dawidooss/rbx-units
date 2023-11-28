@@ -1,24 +1,27 @@
-import { Players, UserInputService, Workspace } from "@rbxts/services";
+import { UserInputService } from "@rbxts/services";
 
-export default abstract class Input {
-	private static holdingButtons = new Map<Enum.KeyCode, boolean>();
-	private static binds = new Map<KeyBinding, Callback>();
+export default class Input {
+	private holdingButtons = new Map<Enum.KeyCode, boolean>();
+	private binds = new Map<KeyBinding, Callback>();
 
-	public static Init() {
+	private static instance: Input;
+	constructor() {
+		Input.instance = this;
+
 		UserInputService.InputBegan.Connect((input, processed) => {
-			Input.HandleInput(input);
+			this.HandleInput(input);
 		});
 
 		UserInputService.InputEnded.Connect((input, processed) => {
-			Input.HandleInput(input);
+			this.HandleInput(input);
 		});
 	}
 
-	private static HandleInput = (input: InputObject) => {
+	private HandleInput = (input: InputObject) => {
 		const holding = input.UserInputState === Enum.UserInputState.Begin;
-		Input.holdingButtons.set(input.KeyCode, holding);
+		this.holdingButtons.set(input.KeyCode, holding);
 
-		Input.binds.forEach((callback, keyBinding) => {
+		this.binds.forEach((callback, keyBinding) => {
 			if (
 				(input.KeyCode === keyBinding.button || input.UserInputType === keyBinding.button) &&
 				input.UserInputState === keyBinding.state
@@ -28,12 +31,16 @@ export default abstract class Input {
 		});
 	};
 
-	public static IsButtonHolding(button: Enum.KeyCode): boolean {
-		return Input.holdingButtons.get(button) || false;
+	public IsButtonHolding(button: Enum.KeyCode): boolean {
+		return this.holdingButtons.get(button) || false;
 	}
 
-	public static Bind(button: Enum.KeyCode | Enum.UserInputType, state: Enum.UserInputState, callback: Callback) {
-		Input.binds.set(new KeyBinding(button, state), callback);
+	public Bind(button: Enum.KeyCode | Enum.UserInputType, state: Enum.UserInputState, callback: Callback) {
+		this.binds.set(new KeyBinding(button, state), callback);
+	}
+
+	public static Get() {
+		return Input.instance || new Input();
 	}
 }
 
