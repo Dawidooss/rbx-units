@@ -7,9 +7,6 @@ import UnitsAction from "./Units/UnitsAction";
 import HUDHandler from "./Units/HUDHandler";
 import HUD from "./Units/HUD";
 import ClientGameStore from "./DataStore/ClientGameStore";
-import ClientPlayersStore from "./DataStore/ClientPlayersStore";
-import TeamsStore from "shared/DataStore/Stores/TeamStore";
-import ClientTeamsStore from "./DataStore/ClientTeamsStore";
 
 const gameStore = ClientGameStore.Get();
 const hud = HUD.Get();

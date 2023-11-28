@@ -2,9 +2,8 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local ServerResponseBuilder = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").ServerResponseBuilder
 local UnitsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "UnitsStore").default
-local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
-local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").default
+local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local replicator = ServerReplicator:Get()
 local ServerUnitsStore
 do
@@ -22,28 +21,51 @@ do
 	end
 	function ServerUnitsStore:constructor(gameStore)
 		super.constructor(self, gameStore)
-		replicator:Connect("create-unit", function(player, data)
-			local buffer = BitBuffer(data)
+		replicator:Connect("create-unit", function(player, buffer)
 			local unitData = self:Deserialize(buffer)
 			self:Add(unitData)
 			return ServerResponseBuilder.new():Build()
 		end)
+		replicator:Connect("unit-movement", function(player, buffer)
+			local unitId = buffer.readString()
+			local unit = self.cache[unitId]
+			if not unit then
+				ServerResponseBuilder.new():SetError("data-missmatch"):Build()
+			end
+			-- TODO
+			return ServerResponseBuilder.new():Build()
+		end)
 	end
-	function ServerUnitsStore:Add(unitData)
+	function ServerUnitsStore:Add(unitData, queue)
 		super.Add(self, unitData)
-		replicator:ReplicateAll("unit-created", self:Serialize(unitData))
+		local queuePassed = not not queue
+		local _condition = queue
+		if not queue then
+			_condition = ReplicationQueue.new()
+		end
+		queue = _condition
+		queue:Add("unit-created", function(buffer)
+			self:Serialize(unitData, buffer)
+		end)
+		if not queuePassed then
+			replicator:ReplicateAll(queue)
+		end
 		return unitData
 	end
-	function ServerUnitsStore:Remove(unitId)
+	function ServerUnitsStore:Remove(unitId, queue)
 		super.Remove(self, unitId)
-		local buffer = BitBuffer()
-		buffer.writeString(unitId)
-		replicator:ReplicateAll("unit-removed", buffer)
-	end
-	function ServerUnitsStore:UpdateUnitPosition(unitData)
-		local position = unitData.position:Lerp(unitData.targetPosition, math.clamp(Utils:Map(os.time(), unitData.movementStartTick, unitData.movementEndTick, 0, 1), 0, 1))
-		unitData.position = position
-		unitData.movementStartTick = os.time()
+		local queuePassed = not not queue
+		local _condition = queue
+		if not queue then
+			_condition = ReplicationQueue.new()
+		end
+		queue = _condition
+		queue:Add("unit-created", function(buffer)
+			buffer.writeString(unitId)
+		end)
+		if not queuePassed then
+			replicator:ReplicateAll(queue)
+		end
 	end
 end
 return {

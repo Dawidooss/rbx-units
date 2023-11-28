@@ -8,6 +8,7 @@ local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", 
 local ClientGameStore = TS.import(script, script.Parent, "DataStore", "ClientGameStore").default
 local Unit = TS.import(script, script.Parent, "Units", "Unit").default
 local ClientReplicator = TS.import(script, script.Parent, "DataStore", "ClientReplicator").default
+local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local player = Players.LocalPlayer
 local gameStore = ClientGameStore:Get()
 local unitsStore = gameStore:GetStore("UnitsStore")
@@ -34,13 +35,16 @@ do
 				type = "Dummy",
 				position = mouseHitResult.Position,
 				playerId = player.UserId,
-				targetPosition = mouseHitResult.Position,
-				movementStartTick = os.time(),
-				movementEndTick = os.time(),
+				path = {},
 			}
-			unitData.instance = Unit.new(unitData)
-			unitsStore:Add(unitData)
-			replicator:Replicate("create-unit", unitsStore:Serialize(unitData).dumpString())
+			local clientUnitData = unitData
+			clientUnitData.instance = Unit.new(unitData)
+			unitsStore:Add(clientUnitData)
+			local queue = ReplicationQueue.new()
+			queue:Add("create-unit", function(buffer)
+				unitsStore:Serialize(unitData, buffer)
+			end)
+			replicator:Replicate("create-unit", queue)
 		end
 	end
 end

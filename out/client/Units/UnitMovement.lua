@@ -2,11 +2,9 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local HttpService = _services.HttpService
-local Players = _services.Players
 local RunService = _services.RunService
 local MovementVisualisation = TS.import(script, script.Parent, "MovementVisualisation").default
 local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
-local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local ClientReplicator = TS.import(script, script.Parent.Parent, "DataStore", "ClientReplicator").default
 local replicator = ClientReplicator:Get()
 local UnitMovement
@@ -23,7 +21,6 @@ do
 	end
 	function UnitMovement:constructor(unit)
 		self.moving = false
-		self.path = {}
 		self.moveToTries = 0
 		self.unit = unit
 		self.visualisation = MovementVisualisation.new(self)
@@ -37,33 +34,32 @@ do
 		end
 		self.moveToTries = 0
 		self.movingTo = nil
-		self.path = {}
+		self.unit.data.path = {}
 		self.moving = false
 	end
 	UnitMovement.Move = TS.async(function(self, path, replicate)
 		local pathId = HttpService:GenerateGUID(false)
 		self.pathId = pathId
-		self.path = path
+		self.unit.data.path = path
 		self.moving = true
-		while self.moving and (self.pathId == pathId and #self.path > 0) do
-			local success = TS.await(self:MoveTo(self.path[1]))
+		while self.moving and (self.pathId == pathId and #self.unit.data.path > 0) do
+			local success = TS.await(self:MoveTo(self.unit.data.path[1]))
 			if not success then
 				break
 			end
-			table.remove(self.path, 1)
+			table.remove(self.unit.data.path, 1)
 		end
 		self:Stop()
 	end)
 	UnitMovement.MoveTo = TS.async(function(self, position)
 		self.moving = true
 		self.movingTo = position
+		self.moveToTries = 0
 		self.visualisation:Enable(self.unit.selectionType == SelectionType.Selected)
 		local promise = TS.Promise.new(TS.async(function(resolve, reject)
 			-- orientation to position
 			local orientation = { CFrame.new(self.unit.model:GetPivot().Position, position):ToOrientation() }
 			self.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[2], 0)
-			self.unit.data.targetPosition = position
-			self.unit.data.movementStartTick = tick()
 			local success = TS.await(self:TryMoveTo(position))
 			resolve(success)
 			-- replicate to server if player is owner of this unit
@@ -89,7 +85,7 @@ do
 				resolve(true)
 				return nil
 			end
-			self:Replicate()
+			-- this.Replicate();
 			self.unit.model.Humanoid:MoveTo(position)
 			local _result = self.loopConnection
 			if _result ~= nil then
@@ -114,23 +110,6 @@ do
 		end)
 		return promise
 	end)
-	function UnitMovement:Replicate()
-		if self.unit.data.playerId == Players.LocalPlayer.UserId then
-			local buffer = BitBuffer()
-			buffer.writeString(self.unit.data.id)
-			buffer.writeVector3(self.unit:GetPosition())
-			buffer.writeFloat32(tick())
-			for _, position in self.path do
-				buffer.writeVector3(position)
-			end
-			local response = replicator:Replicate("unit-movement", buffer.dumpString())[1]
-			if response.error then
-				-- this.unit.model.PivotTo(currentPosition);
-				-- this.Stop(false);
-				print("didnt work")
-			end
-		end
-	end
 end
 return {
 	default = UnitMovement,

@@ -54,10 +54,10 @@ do
 				else
 					_shouldIncrement = true
 				end
-				if not (pathIndex < #self.movement.path) then
+				if not (pathIndex < #self.unit.data.path) then
 					break
 				end
-				local position = self.movement.path[pathIndex + 1]
+				local position = self.unit.data.path[pathIndex + 1]
 				local length = (previousVisualisationAtt.WorldPosition - position).Magnitude
 				local visualisationPart = self.visualisationPart:Clone()
 				local _fn = Utils
@@ -75,7 +75,7 @@ do
 				visualisationPart:PivotTo(cframe)
 				visualisationPart.Beam.Attachment1 = previousVisualisationAtt
 				visualisationPart.Beam.TextureLength = length
-				visualisationPart.Transparency = if pathIndex == #self.movement.path - 1 then 0 else 1
+				visualisationPart.Transparency = if pathIndex == #self.unit.data.path - 1 then 0 else 1
 				visualisationPart.Parent = self.visualisation.Positions
 				previousVisualisationAtt = visualisationPart.Attachment
 			end

@@ -1,6 +1,7 @@
 -- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Network = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Network")
+local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local ServerResponseBuilder
 local ServerReplicator
 do
@@ -15,24 +16,33 @@ do
 		return self:constructor(...) or self
 	end
 	function ServerReplicator:constructor()
+		self.connections = {}
 		ServerReplicator.instance = self
+		Network:BindFunctions({
+			["chunked-data"] = function(player, data)
+				ReplicationQueue:Divide(data, function(key, buffer)
+					local _arg0 = self.connections[key]
+					local _arg1 = "Connection " .. (key .. " missing in ServerReplicator")
+					assert(_arg0, _arg1)
+					return { self.connections[key](player, buffer) }
+				end)
+			end,
+		})
 	end
-	function ServerReplicator:Replicate(player, key, buffer)
-		local response = ServerResponseBuilder.new():SetData(buffer.dumpString()):Build()
-		Network:FireClient(player, key, response)
+	function ServerReplicator:Replicate(player, queue)
+		local response = ServerResponseBuilder.new():SetData(queue:DumpString()):Build()
+		Network:FireClient(player, "chunked-data", response)
 	end
-	function ServerReplicator:ReplicateAll(key, buffer)
-		local response = ServerResponseBuilder.new():SetData(buffer.dumpString()):Build()
-		Network:FireAllClients(key, response)
+	function ServerReplicator:ReplicateExcept(player, queue)
+		local response = ServerResponseBuilder.new():SetData(queue:DumpString()):Build()
+		Network:FireOtherClients(player, "chunked-data", response)
 	end
-	function ServerReplicator:ReplicateExcept(player, key, buffer)
-		local response = ServerResponseBuilder.new():SetData(buffer.dumpString()):Build()
-		Network:FireOtherClients(player, key, response)
+	function ServerReplicator:ReplicateAll(queue)
+		local response = ServerResponseBuilder.new():SetData(queue:DumpString()):Build()
+		Network:FireAllClients("chunked-data", response)
 	end
 	function ServerReplicator:Connect(key, callback)
-		Network:BindFunctions({
-			[key] = callback,
-		})
+		self.connections[key] = callback
 	end
 	function ServerReplicator:Get()
 		return ServerReplicator.instance or ServerReplicator.new()

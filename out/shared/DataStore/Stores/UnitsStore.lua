@@ -37,21 +37,30 @@ do
 		buffer.writeString(unitData.type)
 		buffer.writeVector3(unitData.position)
 		buffer.writeUInt32(unitData.playerId)
-		buffer.writeVector3(unitData.targetPosition)
-		buffer.writeUInt32(unitData.movementStartTick)
-		buffer.writeUInt32(unitData.movementEndTick)
+		for _, position in unitData.path do
+			buffer.writeString("+")
+			buffer.writeVector3(position)
+		end
+		buffer.writeString("-")
 		return buffer
 	end
 	function UnitsStore:Deserialize(buffer)
-		return {
-			id = buffer.readString(),
-			type = buffer.readString(),
-			position = buffer.readVector3(),
-			playerId = buffer.readUInt16(),
-			targetPosition = buffer.readVector3(),
-			movementStartTick = buffer.readUInt16(),
-			movementEndTick = buffer.readUInt16(),
-		}
+		local unitData = {}
+		unitData.id = buffer.readString()
+		local _exp = (unitData.id)
+		unitData.type = buffer.readString()
+		local _exp_1 = (unitData.type)
+		unitData.position = buffer.readVector3()
+		local _exp_2 = (unitData.position)
+		unitData.playerId = buffer.readUInt16()
+		local _exp_3 = (unitData.playerId)
+		unitData.path = {}
+		local _ = (unitData.path)
+		while buffer.readString() == "+" do
+			local position = buffer.readVector3()
+			table.insert(unitData.path, position)
+		end
+		return unitData
 	end
 end
 return {

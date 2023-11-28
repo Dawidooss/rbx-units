@@ -32,14 +32,13 @@ do
 		self:AddStore(ServerTeamsStore.new(self))
 		self:AddStore(ServerPlayersStore.new(self))
 		self:AddStore(ServerUnitsStore.new(self))
-		replicator:Connect("fetch-all", function(player)
-			local buffer = BitBuffer()
+		replicator:Connect("fetch-all", function(player, buffer)
+			local responseBuffer = BitBuffer()
 			for storeName, store in self.stores do
-				buffer.writeString(storeName)
-				store:SerializeCache(buffer)
+				responseBuffer.writeString(storeName)
+				store:SerializeCache(responseBuffer)
 			end
-			local response = ServerResponseBuilder.new():SetData(buffer.dumpString()):Build()
-			return { response }
+			return ServerResponseBuilder.new():SetData(responseBuffer.dumpString()):Build()
 		end)
 	end
 	function ServerGameStore:Get()

@@ -5,6 +5,9 @@ import ClientGameStore from "./DataStore/ClientGameStore";
 import ClientUnitsStore, { ClientUnitData } from "./DataStore/ClientUnitsStore";
 import Unit from "./Units/Unit";
 import ClientReplicator from "./DataStore/ClientReplicator";
+import { UnitData } from "shared/DataStore/Stores/UnitsStore";
+import ReplicationQueue from "../shared/ReplicationQueue";
+import BitBuffer from "@rbxts/bitbuffer";
 
 const player = Players.LocalPlayer;
 
@@ -27,16 +30,19 @@ export default abstract class Admin {
 				type: "Dummy",
 				position: mouseHitResult.Position,
 				playerId: player.UserId,
+				path: [],
+			} as UnitData;
 
-				targetPosition: mouseHitResult.Position,
-				movementStartTick: os.time(),
-				movementEndTick: os.time(),
-			} as ClientUnitData;
+			let clientUnitData = unitData as ClientUnitData;
+			clientUnitData.instance = new Unit(unitData);
 
-			unitData.instance = new Unit(unitData);
-			unitsStore.Add(unitData);
+			unitsStore.Add(clientUnitData);
 
-			replicator.Replicate("create-unit", unitsStore.Serialize(unitData).dumpString());
+			const queue = new ReplicationQueue();
+			queue.Add("create-unit", (buffer: BitBuffer) => {
+				unitsStore.Serialize(unitData, buffer);
+			});
+			replicator.Replicate("create-unit", queue);
 		}
 	}
 }

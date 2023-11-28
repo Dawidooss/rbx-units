@@ -46,8 +46,8 @@ export default class MovementVisualisation {
 
 		let previousVisualisationAtt = this.beamAttachment;
 
-		for (let pathIndex = 0; pathIndex < this.movement.path.size(); pathIndex++) {
-			const position = this.movement.path[pathIndex];
+		for (let pathIndex = 0; pathIndex < this.unit.data.path.size(); pathIndex++) {
+			const position = this.unit.data.path[pathIndex];
 			const length = previousVisualisationAtt.WorldPosition.sub(position).Magnitude;
 
 			const visualisationPart = this.visualisationPart.Clone();
@@ -67,7 +67,7 @@ export default class MovementVisualisation {
 
 			visualisationPart.Beam.Attachment1 = previousVisualisationAtt;
 			visualisationPart.Beam.TextureLength = length;
-			visualisationPart.Transparency = pathIndex === this.movement.path.size() - 1 ? 0 : 1;
+			visualisationPart.Transparency = pathIndex === this.unit.data.path.size() - 1 ? 0 : 1;
 			visualisationPart.Parent = this.visualisation.Positions;
 
 			previousVisualisationAtt = visualisationPart.Attachment;

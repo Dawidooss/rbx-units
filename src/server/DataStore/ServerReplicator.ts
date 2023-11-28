@@ -1,32 +1,42 @@
 import Network from "shared/Network";
-import GameStore from "./ServerGameStore";
 import BitBuffer from "@rbxts/bitbuffer";
+import ReplicationQueue from "shared/ReplicationQueue";
+import { Players } from "@rbxts/services";
 
 export default class ServerReplicator {
+	private connections: { [key: string]: (player: Player, buffer: BitBuffer) => void } = {};
+
 	private static instance: ServerReplicator;
 	constructor() {
 		ServerReplicator.instance = this;
-	}
 
-	public Replicate(player: Player, key: string, buffer: BitBuffer) {
-		const response = new ServerResponseBuilder().SetData(buffer.dumpString()).Build();
-		Network.FireClient(player, key, response);
-	}
-
-	public ReplicateAll(key: string, buffer: BitBuffer) {
-		const response = new ServerResponseBuilder().SetData(buffer.dumpString()).Build();
-		Network.FireAllClients(key, response);
-	}
-
-	public ReplicateExcept(player: Player, key: string, buffer: BitBuffer) {
-		const response = new ServerResponseBuilder().SetData(buffer.dumpString()).Build();
-		Network.FireOtherClients(player, key, response);
-	}
-
-	public Connect(key: string, callback: Callback) {
 		Network.BindFunctions({
-			[key]: callback,
+			"chunked-data": (player: Player, data: string) => {
+				ReplicationQueue.Divide(data, (key: string, buffer: BitBuffer) => {
+					assert(this.connections[key], `Connection ${key} missing in ServerReplicator`);
+					return [this.connections[key](player, buffer)];
+				});
+			},
 		});
+	}
+
+	public Replicate(player: Player, queue: ReplicationQueue) {
+		const response = new ServerResponseBuilder().SetData(queue.DumpString()).Build();
+		Network.FireClient(player, "chunked-data", response);
+	}
+
+	public ReplicateExcept(player: Player, queue: ReplicationQueue) {
+		const response = new ServerResponseBuilder().SetData(queue.DumpString()).Build();
+		Network.FireOtherClients(player, "chunked-data", response);
+	}
+
+	public ReplicateAll(queue: ReplicationQueue) {
+		const response = new ServerResponseBuilder().SetData(queue.DumpString()).Build();
+		Network.FireAllClients("chunked-data", response);
+	}
+
+	public Connect(key: string, callback: (player: Player, buffer: BitBuffer) => ServerResponse) {
+		this.connections[key] = callback;
 	}
 
 	public static Get() {

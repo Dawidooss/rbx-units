@@ -23,26 +23,26 @@ export default class UnitMovement {
 	}
 
 	public Stop() {
-		this.data.pathId = undefined;
+		this.pathId = undefined;
 		this.visualisation.Enable(false);
 		this.loopConnection?.Disconnect();
 		this.moveToTries = 0;
 		this.movingTo = undefined;
-		this.data.path = [];
+		this.unit.data.path = [];
 		this.moving = false;
 	}
 
 	public async Move(path: Vector3[], replicate: boolean) {
 		const pathId = HttpService.GenerateGUID(false);
-		this.data.pathId = pathId;
-		this.data.path = path;
+		this.pathId = pathId;
+		this.unit.data.path = path;
 		this.moving = true;
 
-		while (this.moving && this.data.pathId === pathId && this.data.path.size() > 0) {
-			const success = await this.MoveTo(this.data.path[0]);
+		while (this.moving && this.pathId === pathId && this.unit.data.path.size() > 0) {
+			const success = await this.MoveTo(this.unit.data.path[0]);
 			if (!success) break;
 
-			this.data.path.shift();
+			this.unit.data.path.shift();
 		}
 		this.Stop();
 	}
@@ -50,6 +50,7 @@ export default class UnitMovement {
 	private async MoveTo(position: Vector3): Promise<boolean> {
 		this.moving = true;
 		this.movingTo = position;
+		this.moveToTries = 0;
 
 		this.visualisation.Enable(this.unit.selectionType === SelectionType.Selected);
 
@@ -58,8 +59,6 @@ export default class UnitMovement {
 			const orientation = new CFrame(this.unit.model.GetPivot().Position, position).ToOrientation();
 
 			this.unit.alignOrientation.CFrame = CFrame.Angles(0, orientation[1], 0);
-			this.unit.data.targetPosition = position;
-			this.unit.data.movementStartTick = tick();
 
 			const success = await this.TryMoveTo(position);
 			resolve(success);
@@ -94,7 +93,7 @@ export default class UnitMovement {
 				return;
 			}
 
-			this.Replicate();
+			// this.Replicate();
 			this.unit.model.Humanoid.MoveTo(position);
 
 			this.loopConnection?.Disconnect();
@@ -117,26 +116,5 @@ export default class UnitMovement {
 		});
 
 		return promise;
-	}
-
-	private Replicate() {
-		if (this.unit.data.playerId === Players.LocalPlayer.UserId) {
-			const buffer = BitBuffer();
-			buffer.writeString(this.unit.data.id);
-			buffer.writeVector3(this.unit.GetPosition());
-			buffer.writeFloat32(tick());
-
-			for (const position of this.data.path) {
-				buffer.writeVector3(position);
-			}
-
-			const response = replicator.Replicate("unit-movement", buffer.dumpString())[0] as ServerResponse;
-
-			if (response.error) {
-				// this.unit.model.PivotTo(currentPosition);
-				// this.Stop(false);
-				print("didnt work");
-			}
-		}
 	}
 }

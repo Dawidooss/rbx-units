@@ -1,8 +1,8 @@
 -- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local TeamsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "TeamStore").default
-local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").default
+local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local replicator = ServerReplicator:Get()
 local ServerTeamsStore
 do
@@ -21,16 +21,36 @@ do
 	function ServerTeamsStore:constructor(gameStore)
 		super.constructor(self, gameStore)
 	end
-	function ServerTeamsStore:Add(teamData)
+	function ServerTeamsStore:Add(teamData, queue)
 		super.Add(self, teamData)
-		replicator:ReplicateAll("team-created", self:Serialize(teamData))
+		local queuePassed = not not queue
+		local _condition = queue
+		if not queue then
+			_condition = ReplicationQueue.new()
+		end
+		queue = _condition
+		queue:Add("team-created", function(buffer)
+			self:Serialize(teamData, buffer)
+		end)
+		if not queuePassed then
+			replicator:ReplicateAll(queue)
+		end
 		return teamData
 	end
-	function ServerTeamsStore:Remove(teamId)
+	function ServerTeamsStore:Remove(teamId, queue)
 		super.Remove(self, teamId)
-		local buffer = BitBuffer()
-		buffer.writeString(teamId)
-		replicator:ReplicateAll("team-removed", buffer)
+		local queuePassed = not not queue
+		local _condition = queue
+		if not queue then
+			_condition = ReplicationQueue.new()
+		end
+		queue = _condition
+		queue:Add("team-created", function(buffer)
+			buffer.writeString(teamId)
+		end)
+		if not queuePassed then
+			replicator:ReplicateAll(queue)
+		end
 	end
 end
 return {

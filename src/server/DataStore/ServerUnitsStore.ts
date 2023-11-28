@@ -6,6 +6,8 @@ import UnitsStore, { UnitData } from "shared/DataStore/Stores/UnitsStore";
 import Utils from "shared/Utils";
 import BitBuffer from "@rbxts/bitbuffer";
 import ServerReplicator from "./ServerReplicator";
+import { uint } from "@rbxts/squash";
+import ReplicationQueue from "shared/ReplicationQueue";
 
 const replicator = ServerReplicator.Get();
 
@@ -13,37 +15,53 @@ export default class ServerUnitsStore extends UnitsStore {
 	constructor(gameStore: ServerGameStore) {
 		super(gameStore);
 
-		replicator.Connect("create-unit", (player: Player, data: string) => {
-			const buffer = BitBuffer(data);
-
+		replicator.Connect("create-unit", (player: Player, buffer: BitBuffer) => {
 			const unitData = this.Deserialize(buffer);
 			this.Add(unitData);
 			return new ServerResponseBuilder().Build();
 		});
+
+		replicator.Connect("unit-movement", (player: Player, buffer: BitBuffer) => {
+			const unitId = buffer.readString();
+			const unit = this.cache.get(unitId);
+
+			if (!unit) {
+				new ServerResponseBuilder().SetError("data-missmatch").Build();
+			}
+
+			// TODO
+
+			return new ServerResponseBuilder().Build();
+		});
 	}
 
-	public Add(unitData: UnitData): UnitData {
+	public Add(unitData: UnitData, queue?: ReplicationQueue): UnitData {
 		super.Add(unitData);
-		replicator.ReplicateAll("unit-created", this.Serialize(unitData));
+
+		const queuePassed = !!queue;
+		queue ||= new ReplicationQueue();
+		queue.Add("unit-created", (buffer: BitBuffer) => {
+			this.Serialize(unitData, buffer);
+		});
+
+		if (!queuePassed) {
+			replicator.ReplicateAll(queue);
+		}
 
 		return unitData;
 	}
 
-	public Remove(unitId: string): void {
+	public Remove(unitId: string, queue?: ReplicationQueue): void {
 		super.Remove(unitId);
 
-		const buffer = BitBuffer();
-		buffer.writeString(unitId);
-		replicator.ReplicateAll("unit-removed", buffer);
-	}
+		const queuePassed = !!queue;
+		queue ||= new ReplicationQueue();
+		queue.Add("unit-created", (buffer: BitBuffer) => {
+			buffer.writeString(unitId);
+		});
 
-	public UpdateUnitPosition(unitData: UnitData) {
-		const position = unitData.position.Lerp(
-			unitData.targetPosition,
-			math.clamp(Utils.Map(os.time(), unitData.movementStartTick, unitData.movementEndTick, 0, 1), 0, 1),
-		);
-
-		unitData.position = position;
-		unitData.movementStartTick = os.time();
+		if (!queuePassed) {
+			replicator.ReplicateAll(queue);
+		}
 	}
 }

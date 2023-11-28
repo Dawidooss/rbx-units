@@ -119,7 +119,7 @@ export default abstract class UnitsAction {
 
 		unitsAndCFrames.forEach(async (element, unit) => {
 			const path = unit.pathfinding.ComputePath(cframe.Position);
-			unit.movement.Move(path);
+			unit.movement.Move(path, true);
 		});
 	}
 }

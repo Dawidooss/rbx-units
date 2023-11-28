@@ -1,8 +1,5 @@
 import { Players, UserInputService, Workspace } from "@rbxts/services";
 
-const camera = Workspace.CurrentCamera!;
-const player = Players.LocalPlayer;
-
 export default abstract class Input {
 	private static holdingButtons = new Map<Enum.KeyCode, boolean>();
 	private static binds = new Map<KeyBinding, Callback>();

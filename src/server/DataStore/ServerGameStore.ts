@@ -19,17 +19,15 @@ export default class ServerGameStore extends GameStore {
 		this.AddStore(new ServerPlayersStore(this));
 		this.AddStore(new ServerUnitsStore(this));
 
-		replicator.Connect("fetch-all", (player: Player) => {
-			const buffer = BitBuffer();
+		replicator.Connect("fetch-all", (player: Player, buffer: BitBuffer) => {
+			const responseBuffer = BitBuffer();
 
 			for (const [storeName, store] of this.stores) {
-				buffer.writeString(storeName);
-				store.SerializeCache(buffer);
+				responseBuffer.writeString(storeName);
+				store.SerializeCache(responseBuffer);
 			}
 
-			const response = new ServerResponseBuilder().SetData(buffer.dumpString()).Build();
-
-			return [response];
+			return new ServerResponseBuilder().SetData(responseBuffer.dumpString()).Build();
 		});
 	}
 
