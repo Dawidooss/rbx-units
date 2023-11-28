@@ -15,25 +15,30 @@ export default class UnitsStore extends Store<UnitData> {
 		buffer.writeString(unitData.type);
 		buffer.writeVector3(unitData.position);
 		buffer.writeUInt32(unitData.playerId);
-
-		buffer.writeVector3(unitData.targetPosition);
-		buffer.writeUInt32(unitData.movementStartTick);
-		buffer.writeUInt32(unitData.movementEndTick);
+		for (const position of unitData.path) {
+			buffer.writeString("+");
+			buffer.writeVector3(position);
+		}
+		buffer.writeString("-");
 
 		return buffer;
 	}
 
 	public Deserialize(buffer: BitBuffer): UnitData {
-		return {
-			id: buffer.readString(),
-			type: buffer.readString(),
-			position: buffer.readVector3(),
-			playerId: buffer.readUInt16(),
+		let unitData = {} as UnitData;
 
-			targetPosition: buffer.readVector3(),
-			movementStartTick: buffer.readUInt16(),
-			movementEndTick: buffer.readUInt16(),
-		};
+		(unitData.id = buffer.readString()),
+			(unitData.type = buffer.readString()),
+			(unitData.position = buffer.readVector3()),
+			(unitData.playerId = buffer.readUInt16()),
+			(unitData.path = []);
+
+		while (buffer.readString() === "+") {
+			const position = buffer.readVector3();
+			unitData.path.push(position);
+		}
+
+		return unitData;
 	}
 }
 
@@ -42,8 +47,5 @@ export type UnitData = {
 	type: string;
 	position: Vector3;
 	playerId: number;
-
-	targetPosition: Vector3;
-	movementStartTick: number;
-	movementEndTick: number;
+	path: Vector3[];
 };

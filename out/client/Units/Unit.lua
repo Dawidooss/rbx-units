@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.1.1
+-- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Maid = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "maid", "Maid")
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
@@ -73,6 +73,7 @@ do
 	end
 	function Unit:UpdateVisuals()
 		local selected = self.selectionType == SelectionType.Selected
+		self.movement.visualisation:Enable(selected)
 		self.selectionCircle.Transparency = if self.selectionType == SelectionType.None then 1 else 0.2
 		self.selectionCircle.Color = if selected then Color3.fromRGB(143, 142, 145) else Color3.fromRGB(70, 70, 70)
 	end

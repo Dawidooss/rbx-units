@@ -1,8 +1,5 @@
-import { HttpService, PathfindingService, Players, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
+import { PathfindingService } from "@rbxts/services";
 import Unit from "./Unit";
-import Utils from "../../shared/Utils";
-import ClientGameStore from "client/DataStore/ClientGameStore";
-import BitBuffer from "@rbxts/bitbuffer";
 import ClientReplicator from "client/DataStore/ClientReplicator";
 
 const agentParams = {
@@ -26,14 +23,17 @@ export default class Pathfinding {
 	}
 
 	public ComputePath(position: Vector3): Vector3[] {
-		this.path.ComputeAsync(this.unit.model.GetPivot().Position, position);
+		this.path.ComputeAsync(this.unit.GetPosition(), position);
 
 		if (this.path.Status !== Enum.PathStatus.Success && this.path.Status !== Enum.PathStatus.ClosestNoPath) {
 			return [];
 		}
 
 		let path: Vector3[] = [];
-		for (const waypoint of this.path.GetWaypoints()) {
+		let waypoints = this.path.GetWaypoints();
+		waypoints.shift();
+
+		for (const waypoint of waypoints) {
 			path.push(waypoint.Position);
 		}
 

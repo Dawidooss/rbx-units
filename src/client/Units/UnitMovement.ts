@@ -1,53 +1,59 @@
-import { HttpService, PathfindingService, Players, ReplicatedFirst, RunService, Workspace } from "@rbxts/services";
+import { HttpService, Players, RunService, Workspace } from "@rbxts/services";
 import Unit from "./Unit";
-import Utils from "../../shared/Utils";
-import ClientGameStore from "client/DataStore/ClientGameStore";
+import MovementVisualisation from "./MovementVisualisation";
+import { SelectionType } from "shared/types";
 import BitBuffer from "@rbxts/bitbuffer";
 import ClientReplicator from "client/DataStore/ClientReplicator";
-import MovementVisualisation from "./MovementVisualisation";
 
-const agentParams = {
-	AgentCanJump: false,
-	WaypointSpacing: math.huge,
-	AgentRadius: 4,
-};
+const replicator = ClientReplicator.Get();
 
 export default class UnitMovement {
 	public unit: Unit;
 	public visualisation: MovementVisualisation;
 	public moving = false;
 	public movingTo: Vector3 | undefined;
-	public path: Vector3[] = [];
 
 	private moveToTries = 0;
 	private pathId: string | undefined;
+	private loopConnection: RBXScriptConnection | undefined;
 
 	constructor(unit: Unit) {
 		this.unit = unit;
 		this.visualisation = new MovementVisualisation(this);
 	}
 
-	public async Move(path: Vector3[]) {
+	public Stop() {
+		this.data.pathId = undefined;
+		this.visualisation.Enable(false);
+		this.loopConnection?.Disconnect();
+		this.moveToTries = 0;
+		this.movingTo = undefined;
+		this.data.path = [];
+		this.moving = false;
+	}
+
+	public async Move(path: Vector3[], replicate: boolean) {
 		const pathId = HttpService.GenerateGUID(false);
-		this.pathId = pathId;
-		this.path = path;
+		this.data.pathId = pathId;
+		this.data.path = path;
 		this.moving = true;
-		// this.visualisation.Update();
 
-		while (this.moving && this.pathId === pathId && this.path.size() > 0) {
-			const success = await this.MoveTo(this.path[0]);
-			if (!success) return;
+		while (this.moving && this.data.pathId === pathId && this.data.path.size() > 0) {
+			const success = await this.MoveTo(this.data.path[0]);
+			if (!success) break;
 
-			this.path.shift();
+			this.data.path.shift();
 		}
+		this.Stop();
 	}
 
 	private async MoveTo(position: Vector3): Promise<boolean> {
 		this.moving = true;
 		this.movingTo = position;
-		print(3);
 
-		const promise = new Promise<boolean>((resolve, reject) => {
+		this.visualisation.Enable(this.unit.selectionType === SelectionType.Selected);
+
+		const promise = new Promise<boolean>(async (resolve, reject) => {
 			// orientation to position
 			const orientation = new CFrame(this.unit.model.GetPivot().Position, position).ToOrientation();
 
@@ -55,16 +61,8 @@ export default class UnitMovement {
 			this.unit.data.targetPosition = position;
 			this.unit.data.movementStartTick = tick();
 
-			this.TryMoveTo(position, (success: boolean) => resolve(success));
-
-			// this.unit.MoveTo(waypoint.Position, (success: boolean) => {
-			// 	if (success) {
-			// 		this.currentWaypointIndex += 1;
-			// 		this.MoveToCurrentWaypoint();
-			// 	} else {
-			// 		this.Stop(false);
-			// 	}
-			// });
+			const success = await this.TryMoveTo(position);
+			resolve(success);
 
 			// replicate to server if player is owner of this unit
 			// if (this.unit.data.playerId === Players.LocalPlayer.UserId) {
@@ -84,29 +82,61 @@ export default class UnitMovement {
 		return promise;
 	}
 
-	private TryMoveTo(position: Vector3, endCallback?: Callback) {
+	private async TryMoveTo(position: Vector3): Promise<boolean> {
 		this.moveToTries += 1;
 
-		if (this.moveToTries > 10) {
-			warn(`UNIT MOVE TO: ${this.unit.data.id} couldn't get to targetPosition due to exceed moveToTries limit`);
-			endCallback?.(false);
-			return;
-		}
-
-		this.unit.model.Humanoid.MoveTo(position);
-
-		wait(1);
-
-		const conn = RunService.Heartbeat.Connect(() => {
-			const distance = position.sub(this.unit.GetPosition()).Magnitude;
-			if (distance <= 2) {
-				conn.Disconnect();
-				endCallback?.(true);
-			} else if (this.unit.model.Humanoid.GetState() !== Enum.HumanoidStateType.Running) {
-				conn.Disconnect();
-				this.TryMoveTo(position, endCallback);
+		const promise = new Promise<boolean>((resolve, reject) => {
+			if (this.moveToTries > 10) {
+				warn(
+					`UNIT MOVE TO: ${this.unit.data.id} couldn't get to targetPosition due to exceed moveToTries limit`,
+				);
+				resolve(true);
+				return;
 			}
+
+			this.Replicate();
+			this.unit.model.Humanoid.MoveTo(position);
+
+			this.loopConnection?.Disconnect();
+			const conn = RunService.Heartbeat.Connect(async () => {
+				const unitPosition = this.unit.GetPosition();
+				const groundedPosition = new Vector3(position.X, unitPosition.Y, position.Z);
+				const distance = groundedPosition.sub(unitPosition).Magnitude;
+				if (distance <= 2) {
+					conn.Disconnect();
+					resolve(true);
+				} else if (this.unit.model.Humanoid.GetState() !== Enum.HumanoidStateType.Running) {
+					conn.Disconnect();
+					const success = await this.TryMoveTo(position);
+					resolve(success);
+				}
+			});
+			this.loopConnection = conn;
+
+			this.unit.maid.GiveTask(conn);
 		});
-		this.unit.maid.GiveTask(conn);
+
+		return promise;
+	}
+
+	private Replicate() {
+		if (this.unit.data.playerId === Players.LocalPlayer.UserId) {
+			const buffer = BitBuffer();
+			buffer.writeString(this.unit.data.id);
+			buffer.writeVector3(this.unit.GetPosition());
+			buffer.writeFloat32(tick());
+
+			for (const position of this.data.path) {
+				buffer.writeVector3(position);
+			}
+
+			const response = replicator.Replicate("unit-movement", buffer.dumpString())[0] as ServerResponse;
+
+			if (response.error) {
+				// this.unit.model.PivotTo(currentPosition);
+				// this.Stop(false);
+				print("didnt work");
+			}
+		}
 	}
 }

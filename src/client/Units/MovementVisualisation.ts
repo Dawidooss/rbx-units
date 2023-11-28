@@ -1,11 +1,12 @@
-import { ReplicatedFirst } from "@rbxts/services";
+import { ReplicatedFirst, Workspace } from "@rbxts/services";
 import Unit from "./Unit";
 import Movement from "client/Movement";
 import UnitMovement from "./UnitMovement";
+import Utils from "shared/Utils";
 
 export default class MovementVisualisation {
 	public unit: Unit;
-	public unitMovement: UnitMovement;
+	public movement: UnitMovement;
 	public enabled = false;
 
 	private visualisation: ActionCircle;
@@ -13,7 +14,7 @@ export default class MovementVisualisation {
 	private beamAttachment: Attachment;
 
 	constructor(unitMovement: UnitMovement) {
-		this.unitMovement = unitMovement;
+		this.movement = unitMovement;
 		this.unit = unitMovement.unit;
 
 		this.visualisation = ReplicatedFirst.FindFirstChild("NormalAction")!.Clone() as ActionCircle;
@@ -31,73 +32,45 @@ export default class MovementVisualisation {
 
 	public Enable(state: boolean) {
 		this.enabled = state;
-	}
 
-	public SetPath() {}
+		this.Update();
+	}
 
 	private Clear() {
 		this.visualisation.Positions.ClearAllChildren();
 	}
 
-	// private Create() {
-	// 	print("create visualisation");
-	// 	this.Clear();
-	// 	if (!this.active) return;
+	private Update() {
+		this.Clear();
+		if (!this.enabled) return;
 
-	// 	let previousVisualisationAtt = this.beamAttachment;
+		let previousVisualisationAtt = this.beamAttachment;
 
-	// 	for (let waypointIndex = this.currentWaypointIndex; waypointIndex < this.waypoints.size(); waypointIndex++) {
-	// 		const waypoint = this.waypoints[waypointIndex];
-	// 		const toTargetCFrameDistance = previousVisualisationAtt.WorldPosition.sub(waypoint.Position).Magnitude;
+		for (let pathIndex = 0; pathIndex < this.movement.path.size(); pathIndex++) {
+			const position = this.movement.path[pathIndex];
+			const length = previousVisualisationAtt.WorldPosition.sub(position).Magnitude;
 
-	// 		const visualisationPart = this.visualisationPart.Clone();
+			const visualisationPart = this.visualisationPart.Clone();
 
-	// 		const groundPositionResult = Utils.RaycastBottom(
-	// 			waypoint.Position.add(new Vector3(0, 100, 0)),
-	// 			[Workspace.TerrainParts],
-	// 			Enum.RaycastFilterType.Include,
-	// 		);
-	// 		if (!groundPositionResult) continue;
-	// 		const cframe = new CFrame(
-	// 			groundPositionResult.Position,
-	// 			groundPositionResult.Position.add(groundPositionResult.Normal),
-	// 		).mul(CFrame.Angles(math.pi / 2, 0, 0));
+			const groundPositionResult = Utils.RaycastBottom(
+				position.add(new Vector3(0, 100, 0)),
+				[Workspace.TerrainParts],
+				Enum.RaycastFilterType.Include,
+			);
+			if (!groundPositionResult) continue;
+			const cframe = new CFrame(
+				groundPositionResult.Position,
+				groundPositionResult.Position.add(groundPositionResult.Normal),
+			).mul(CFrame.Angles(math.pi / 2, 0, 0));
 
-	// 		visualisationPart.PivotTo(cframe);
+			visualisationPart.PivotTo(cframe);
 
-	// 		visualisationPart.Beam.Attachment1 = previousVisualisationAtt;
-	// 		visualisationPart.Beam.TextureLength = toTargetCFrameDistance;
-	// 		visualisationPart.Name = `${this.pathId}#${waypointIndex}`;
-	// 		visualisationPart.Transparency = waypointIndex === this.waypoints.size() - 1 ? 0 : 1;
-	// 		visualisationPart.Parent = this.visualisation.Positions;
+			visualisationPart.Beam.Attachment1 = previousVisualisationAtt;
+			visualisationPart.Beam.TextureLength = length;
+			visualisationPart.Transparency = pathIndex === this.movement.path.size() - 1 ? 0 : 1;
+			visualisationPart.Parent = this.visualisation.Positions;
 
-	// 		previousVisualisationAtt = visualisationPart.Attachment;
-	// 	}
-	// }
-
-	// private Update() {
-	// 	for (let child of this.visualisation.Positions.GetChildren()) {
-	// 		if (child.Name.split("#")[0] !== this.pathId) {
-	// 			this.Create();
-	// 			return;
-	// 		}
-
-	// 		const waypointIndex = tonumber(child.Name.split("#")[1] as string)!;
-	// 		if (waypointIndex < this.currentWaypointIndex) {
-	// 			child.Destroy();
-	// 			continue;
-	// 		}
-
-	// 		const visualisationPart = child as ActionCircle["Middle"];
-	// 		const toTargetCFrameDistance = visualisationPart.Beam.Attachment0!.WorldPosition.sub(
-	// 			visualisationPart.Beam.Attachment1!.WorldPosition,
-	// 		).Magnitude;
-
-	// 		if (waypointIndex === this.currentWaypointIndex) {
-	// 			visualisationPart.Beam.Attachment1 = this.beamAttachment;
-	// 		}
-
-	// 		visualisationPart.Beam.TextureLength = toTargetCFrameDistance;
-	// 	}
-	// }
+			previousVisualisationAtt = visualisationPart.Attachment;
+		}
+	}
 }

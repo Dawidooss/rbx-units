@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.1.1
+-- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local _services = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services")
 local RunService = _services.RunService
@@ -128,10 +128,12 @@ do
 	UnitsAction.MoveUnits = TS.async(function(self, units, cframe, spread)
 		local cframes = UnitsAction.formationSelected:GetCFramesInFormation(units, cframe, spread)
 		local unitsAndCFrames = UnitsAction.formationSelected:MatchUnitsToCFrames(units, cframes, cframe)
-		for unit, cframe in unitsAndCFrames do
+		local _arg0 = TS.async(function(element, unit)
 			local path = unit.pathfinding:ComputePath(cframe.Position)
-			print(path)
-			unit.movement:Move(path)
+			unit.movement:Move(path, true)
+		end)
+		for _k, _v in unitsAndCFrames do
+			_arg0(_v, _k, unitsAndCFrames)
 		end
 	end)
 	UnitsAction.enabled = false

@@ -84,6 +84,7 @@ export default class Unit {
 
 	private UpdateVisuals() {
 		const selected = this.selectionType === SelectionType.Selected;
+		this.movement.visualisation.Enable(selected);
 
 		this.selectionCircle.Transparency = this.selectionType === SelectionType.None ? 1 : 0.2;
 		this.selectionCircle.Color = selected ? Color3.fromRGB(143, 142, 145) : Color3.fromRGB(70, 70, 70);

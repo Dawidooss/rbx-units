@@ -1,4 +1,4 @@
--- Compiled with roblox-ts v2.1.1
+-- Compiled with roblox-ts v2.2.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local PathfindingService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").PathfindingService
 local ClientReplicator = TS.import(script, script.Parent.Parent, "DataStore", "ClientReplicator").default
@@ -26,12 +26,14 @@ do
 		self.path = PathfindingService:CreatePath(agentParams)
 	end
 	function Pathfinding:ComputePath(position)
-		self.path:ComputeAsync(self.unit.model:GetPivot().Position, position)
+		self.path:ComputeAsync(self.unit:GetPosition(), position)
 		if self.path.Status ~= Enum.PathStatus.Success and self.path.Status ~= Enum.PathStatus.ClosestNoPath then
 			return {}
 		end
 		local path = {}
-		for _, waypoint in self.path:GetWaypoints() do
+		local waypoints = self.path:GetWaypoints()
+		table.remove(waypoints, 1)
+		for _, waypoint in waypoints do
 			local _path = path
 			local _position = waypoint.Position
 			table.insert(_path, _position)
