@@ -1,27 +1,27 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local PlayersStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "PlayersStoreBase").default
-local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").default
+local PlayersStoreBase = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "PlayersStoreBase").default
+local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "Replicator").default
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local replicator = ServerReplicator:Get()
-local ServerPlayersStore
+local PlayersStore
 do
-	local super = PlayersStore
-	ServerPlayersStore = setmetatable({}, {
+	local super = PlayersStoreBase
+	PlayersStore = setmetatable({}, {
 		__tostring = function()
-			return "ServerPlayersStore"
+			return "PlayersStore"
 		end,
 		__index = super,
 	})
-	ServerPlayersStore.__index = ServerPlayersStore
-	function ServerPlayersStore.new(...)
-		local self = setmetatable({}, ServerPlayersStore)
+	PlayersStore.__index = PlayersStore
+	function PlayersStore.new(...)
+		local self = setmetatable({}, PlayersStore)
 		return self:constructor(...) or self
 	end
-	function ServerPlayersStore:constructor(gameStore)
+	function PlayersStore:constructor(gameStore)
 		super.constructor(self, gameStore)
 	end
-	function ServerPlayersStore:Add(playerData, queue)
+	function PlayersStore:Add(playerData, queue)
 		super.Add(self, playerData)
 		local queuePassed = not not queue
 		local _condition = queue
@@ -30,14 +30,14 @@ do
 		end
 		queue = _condition
 		queue:Add("player-added", function(buffer)
-			self:Serialize(playerData, buffer)
+			return self:Serialize(playerData, buffer)
 		end)
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
 		end
 		return playerData
 	end
-	function ServerPlayersStore:Remove(playerId, queue)
+	function PlayersStore:Remove(playerId, queue)
 		super.Remove(self, playerId)
 		local queuePassed = not not queue
 		local _condition = queue
@@ -45,8 +45,9 @@ do
 			_condition = ReplicationQueue.new()
 		end
 		queue = _condition
-		queue:Add("player-added", function(buffer)
-			buffer.writeString(playerId)
+		queue:Add("player-removed", function(buffer)
+			buffer.writeString(tostring(playerId))
+			return buffer
 		end)
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
@@ -54,5 +55,5 @@ do
 	end
 end
 return {
-	default = ServerPlayersStore,
+	default = PlayersStore,
 }

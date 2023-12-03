@@ -1,15 +1,15 @@
-import GameStore from "shared/DataStore/Stores/GameStoreBase";
-import ServerReplicator, { ServerResponseBuilder } from "./ServerReplicator";
+import GameStoreBase from "shared/DataStore/Stores/GameStoreBase";
+import ServerReplicator, { ServerResponseBuilder } from "./Replicator";
 import BitBuffer from "@rbxts/bitbuffer";
 
 const replicator = ServerReplicator.Get();
 
-export default class ServerGameStore extends GameStore {
-	private static instance: ServerGameStore;
+export default class GameStore extends GameStoreBase {
+	private static instance: GameStore;
 	constructor() {
 		super();
-		if (ServerGameStore.instance) return;
-		ServerGameStore.instance = this;
+		if (GameStore.instance) return;
+		GameStore.instance = this;
 
 		replicator.Connect("fetch-all", (player: Player, buffer: BitBuffer) => {
 			const responseBuffer = BitBuffer();
@@ -24,6 +24,6 @@ export default class ServerGameStore extends GameStore {
 	}
 
 	public static Get() {
-		return ServerGameStore.instance || new ServerGameStore();
+		return GameStore.instance || new GameStore();
 	}
 }

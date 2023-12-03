@@ -24,7 +24,7 @@ do
 			self:Add(playerData)
 		end)
 		replicator:Connect("player-removed", function(buffer)
-			local playerId = buffer.readString()
+			local playerId = tonumber(buffer.readString())
 			self:Remove(playerId)
 		end)
 	end

@@ -1,12 +1,13 @@
-import TeamsStore, { TeamData } from "shared/DataStore/Stores/TeamStoreBase";
-import ServerGameStore from "./ServerGameStore";
+import TeamsStoreBase, { TeamData } from "shared/DataStore/Stores/TeamStoreBase";
+import ServerGameStore from "./GameStore";
 import BitBuffer from "@rbxts/bitbuffer";
-import ServerReplicator from "./ServerReplicator";
+import ServerReplicator from "./Replicator";
 import ReplicationQueue from "shared/ReplicationQueue";
+import bit from "shared/bit";
 
 const replicator = ServerReplicator.Get();
 
-export default class ServerTeamsStore extends TeamsStore {
+export default class TeamsStore extends TeamsStoreBase {
 	constructor(gameStore: ServerGameStore) {
 		super(gameStore);
 	}
@@ -17,7 +18,7 @@ export default class ServerTeamsStore extends TeamsStore {
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
 		queue.Add("team-created", (buffer: BitBuffer) => {
-			this.Serialize(teamData, buffer);
+			return this.Serialize(teamData, buffer);
 		});
 
 		if (!queuePassed) {
@@ -27,13 +28,14 @@ export default class ServerTeamsStore extends TeamsStore {
 		return teamData;
 	}
 
-	public Remove(teamId: string, queue?: ReplicationQueue): void {
+	public Remove(teamId: number, queue?: ReplicationQueue): void {
 		super.Remove(teamId);
 
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
-		queue.Add("team-created", (buffer: BitBuffer) => {
-			buffer.writeString(teamId);
+		queue.Add("team-removed", (buffer: BitBuffer) => {
+			buffer.writeBits(...bit.ToBits(teamId, 4));
+			return buffer;
 		});
 
 		if (!queuePassed) {

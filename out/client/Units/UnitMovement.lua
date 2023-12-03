@@ -7,6 +7,7 @@ local MovementVisualisation = TS.import(script, script.Parent, "MovementVisualis
 local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local Replicator = TS.import(script, script.Parent.Parent, "DataStore", "Replicator").default
+local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local replicator = Replicator:Get()
 local UnitMovement
 do
@@ -52,9 +53,12 @@ do
 		local _result = queue
 		if _result ~= nil then
 			_result:Add("unit-movement", function(buffer)
-				buffer.writeString(self.unit.id)
-				buffer.writeVector3(self.unit:GetPosition())
+				local position = self.unit:GetPosition()
+				buffer.writeBits(unpack(bit:ToBits(self.unit.id, 12)))
+				buffer.writeBits(unpack(bit:ToBits(math.floor(position.X), 10)))
+				buffer.writeBits(unpack(bit:ToBits(math.floor(position.Z), 10)))
 				self.unit.unitsStore:SerializePath(self.unit.path, buffer)
+				return buffer
 			end)
 		end
 		if not queuePassed then
@@ -89,7 +93,7 @@ do
 		self.moveToTries += 1
 		local promise = TS.Promise.new(function(resolve, reject)
 			if self.moveToTries > 10 then
-				warn("UNIT MOVE TO: " .. (self.unit.id .. " couldn't get to targetPosition due to exceed moveToTries limit"))
+				warn("UNIT MOVE TO: " .. (tostring(self.unit.id) .. " couldn't get to targetPosition due to exceed moveToTries limit"))
 				resolve(true)
 				return nil
 			end

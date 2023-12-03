@@ -1,21 +1,32 @@
 import GameStore from "./Stores/GameStoreBase";
 import BitBuffer from "@rbxts/bitbuffer";
 
-export default abstract class Store<T> {
+interface idI {
+	id: number;
+}
+
+export default abstract class Store<T extends idI> {
 	public name: string = "Store";
 	public gameStore: GameStore;
-	public cache = new Map<string, T>();
+	public cache = new Map<number, T>();
+	public freeIds: number[] = [];
+	public max = 0;
 
-	constructor(gameStore: GameStore) {
+	constructor(gameStore: GameStore, max: number) {
 		this.gameStore = gameStore;
+		this.max = max;
+
+		for (let i = 0; i < max; i++) {
+			this.freeIds.push(i);
+		}
 	}
 
 	public OverrideData(buffer: BitBuffer) {
 		this.Clear();
 
-		while (buffer.readString() === "+") {
-			const unitData = this.Deserialize(buffer);
-			this.Add(unitData);
+		while (buffer.readBits(1)[0] === 1) {
+			const data = this.Deserialize(buffer);
+			this.Add(data);
 		}
 	}
 
@@ -23,23 +34,31 @@ export default abstract class Store<T> {
 		buffer ||= BitBuffer();
 
 		for (const [_, data] of this.cache) {
-			buffer.writeString("+");
+			buffer.writeBits(1);
 			this.Serialize(data, buffer);
 		}
-		buffer.writeString("-");
+		buffer.writeBits(0);
 
 		return buffer;
 	}
 
-	public Remove(key: string) {
+	public Remove(key: number) {
 		this.cache.delete(key);
+		this.freeIds.push(key);
 	}
 
 	public Clear() {
 		this.cache.clear();
 	}
 
-	abstract Add(value: T): void;
+	public Add(value: T): T {
+		this.cache.set(value.id, value);
+		const i = this.freeIds.find((v) => {
+			return v === value.id;
+		});
+		if (i) this.freeIds.remove(i);
+		return value;
+	}
 	abstract Serialize(data: T, buffer?: BitBuffer): BitBuffer;
 	abstract Deserialize(buffer: BitBuffer): T;
 }

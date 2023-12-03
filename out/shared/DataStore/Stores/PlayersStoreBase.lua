@@ -3,6 +3,7 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local Store = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Store").default
 local Players = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Players
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
+local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local PlayersStoreBase
 do
 	local super = Store
@@ -17,16 +18,9 @@ do
 		local self = setmetatable({}, PlayersStoreBase)
 		return self:constructor(...) or self
 	end
-	function PlayersStoreBase:constructor(...)
-		super.constructor(self, ...)
+	function PlayersStoreBase:constructor(gameStore)
+		super.constructor(self, gameStore, 128)
 		self.name = "PlayersStore"
-	end
-	function PlayersStoreBase:Add(playerData)
-		local _cache = self.cache
-		local _arg0 = tostring(playerData.player.UserId)
-		local _playerData = playerData
-		_cache[_arg0] = _playerData
-		return playerData
 	end
 	function PlayersStoreBase:Serialize(playerData, buffer)
 		local _condition = buffer
@@ -35,15 +29,16 @@ do
 		end
 		buffer = _condition
 		buffer.writeString(tostring(playerData.player.UserId))
-		buffer.writeString(playerData.teamId)
+		buffer.writeBits(unpack(bit:ToBits(playerData.teamId, 4)))
 		return buffer
 	end
 	function PlayersStoreBase:Deserialize(buffer)
 		local playerId = tonumber(buffer.readString())
 		local player = Players:GetPlayerByUserId(playerId)
 		return {
+			id = playerId,
 			player = player,
-			teamId = buffer.readString(),
+			teamId = bit:FromBits(buffer.readBits(4)),
 		}
 	end
 end

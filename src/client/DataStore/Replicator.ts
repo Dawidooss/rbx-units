@@ -40,7 +40,7 @@ export default class Replicator {
 	public async FetchAll(): Promise<BitBuffer> {
 		const promise = new Promise<BitBuffer>(async (resolve, reject) => {
 			const queue = new ReplicationQueue();
-			queue.Add("fetch-all");
+			queue.Add("fetch-all", (buffer) => buffer);
 
 			const response = await this.Replicate(queue);
 

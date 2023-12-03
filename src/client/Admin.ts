@@ -20,39 +20,41 @@ export default class Admin {
 	constructor() {
 		Admin.instance = this;
 
-		// let x = false;
+		let x = false;
 
-		input.Bind(Enum.KeyCode.F, Enum.UserInputState.End, () => this.SpawnUnit());
-		// input.Bind(Enum.KeyCode.F, Enum.UserInputState.Begin, () => {
-		// 	x = true;
-		// });
-		// input.Bind(Enum.KeyCode.F, Enum.UserInputState.End, () => {
-		// 	x = false;
-		// });
+		// input.Bind(Enum.KeyCode.F, Enum.UserInputState.End, () => this.SpawnUnit());
+		input.Bind(Enum.KeyCode.F, Enum.UserInputState.Begin, () => {
+			x = true;
+		});
+		input.Bind(Enum.KeyCode.F, Enum.UserInputState.End, () => {
+			x = false;
+		});
 
-		// spawn(() => {
-		// 	while (wait(0.05)) {
-		// 		if (x) {
-		// 			this.SpawnUnit();
-		// 		}
-		// 	}
-		// });
+		spawn(() => {
+			while (wait(0.05)) {
+				if (x) {
+					this.SpawnUnit();
+				}
+			}
+		});
 	}
 
 	private SpawnUnit() {
 		const mouseHitResult = Utils.GetMouseHit([unitsStore.folder]);
 
 		if (mouseHitResult?.Position) {
-			const id = HttpService.GenerateGUID(false);
 			const name = "Dummy";
 			const position = mouseHitResult.Position;
 
-			const unit = new Unit(gameStore, id, name, position);
+			const unitId = unitsStore.freeIds.shift();
+			if (!unitId) return;
+
+			const unit = new Unit(gameStore, unitId, name, position);
 			unitsStore.Add(unit);
 
 			const queue = new ReplicationQueue();
 			queue.Add("create-unit", (buffer: BitBuffer) => {
-				unitsStore.Serialize(unit, buffer);
+				return unitsStore.Serialize(unit, buffer);
 			});
 
 			replicator.Replicate(queue);

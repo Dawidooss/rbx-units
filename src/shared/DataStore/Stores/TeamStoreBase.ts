@@ -1,18 +1,18 @@
 import BitBuffer from "@rbxts/bitbuffer";
 import Store from "../Store";
+import bit from "shared/bit";
+import GameStoreBase from "./GameStoreBase";
 
 export default class TeamsStoreBase extends Store<TeamData> {
 	public name = "TeamsStore";
 
-	public Add(teamData: TeamData): TeamData {
-		const teamId = teamData.id;
-		this.cache.set(teamId, teamData);
-		return teamData;
+	constructor(gameStore: GameStoreBase) {
+		super(gameStore, 16);
 	}
 
 	public Serialize(teamData: TeamData, buffer?: BitBuffer): BitBuffer {
 		buffer ||= BitBuffer();
-		buffer.writeString(teamData.id);
+		buffer.writeBits(...bit.ToBits(teamData.id, 4));
 		buffer.writeString(teamData.name);
 		buffer.writeColor3(teamData.color);
 
@@ -21,7 +21,7 @@ export default class TeamsStoreBase extends Store<TeamData> {
 
 	public Deserialize(buffer: BitBuffer): TeamData {
 		return {
-			id: buffer.readString(),
+			id: bit.FromBits(buffer.readBits(4)),
 			name: buffer.readString(),
 			color: buffer.readColor3(),
 		};
@@ -29,7 +29,7 @@ export default class TeamsStoreBase extends Store<TeamData> {
 }
 
 export type TeamData = {
+	id: number;
 	name: string;
-	id: string;
 	color: Color3;
 };

@@ -23,7 +23,7 @@ do
 		local self = setmetatable({}, Unit)
 		return self:constructor(...) or self
 	end
-	function Unit:constructor(gameStore, id, name, position, playerId, path)
+	function Unit:constructor(gameStore, id, name, position, playerId, path, health)
 		local _exp = id
 		local _exp_1 = name
 		local _exp_2 = position
@@ -31,14 +31,14 @@ do
 		if not (_condition ~= 0 and (_condition == _condition and _condition)) then
 			_condition = player.UserId
 		end
-		super.constructor(self, _exp, _exp_1, _exp_2, _condition, path)
+		super.constructor(self, _exp, _exp_1, _exp_2, _condition, path, health)
 		self.maid = Maid.new()
 		self.selectionType = SelectionType.None
 		self.selectionRadius = 1.5
 		self.gameStore = gameStore
 		self.unitsStore = gameStore:GetStore("UnitsStore")
 		self.model = ReplicatedFirst.Units[self.name]:Clone()
-		self.model.Name = self.name
+		self.model.Name = self.name .. "#" .. tostring(self.id)
 		self.model:PivotTo(CFrame.new(self.position))
 		self.model.Parent = Workspace:WaitForChild("UnitsCache")
 		-- disabling not used humanoid states to save memory
@@ -73,6 +73,8 @@ do
 		local weld = Instance.new("WeldConstraint", self.selectionCircle)
 		weld.Part0 = self.selectionCircle
 		weld.Part1 = self.model.HumanoidRootPart
+		self.overheadBillboard = ReplicatedFirst.UnitOverheadBillboard:Clone()
+		self.overheadBillboard.Parent = self.model.Head
 		self.movement = UnitMovement.new(self)
 		self.pathfinding = Pathfinding.new(self)
 		self:Select(SelectionType.None)
@@ -91,6 +93,8 @@ do
 	function Unit:UpdateVisuals()
 		local selected = self.selectionType == SelectionType.Selected
 		self.movement.visualisation:Enable(selected)
+		self.overheadBillboard.Enabled = self.selectionType ~= SelectionType.None
+		self.overheadBillboard.HealthBar.Bar.Size = UDim2.fromScale(math.clamp(self.health / 100, 0, 1), 1)
 		self.selectionCircle.Transparency = if self.selectionType == SelectionType.None then 1 else 0.2
 		self.selectionCircle.Color = if selected then Color3.fromRGB(143, 142, 145) else Color3.fromRGB(70, 70, 70)
 	end

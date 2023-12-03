@@ -1,12 +1,14 @@
 import BitBuffer from "@rbxts/bitbuffer";
 
 export default class ReplicationQueue {
-	private buffer = BitBuffer();
-	constructor() {}
+	private buffer;
+	constructor(initialBufferData?: string) {
+		this.buffer = BitBuffer(initialBufferData);
+	}
 
-	public Add(key: string, writeCallback?: (buffer: BitBuffer) => void) {
+	public Add(key: string, writeCallback: (buffer: BitBuffer) => BitBuffer) {
 		this.buffer.writeString(key);
-		writeCallback?.(this.buffer);
+		this.buffer = writeCallback(this.buffer);
 	}
 
 	public DumpString() {

@@ -3,21 +3,21 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local Network = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Network")
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local ServerResponseBuilder
-local ServerReplicator
+local Replicator
 do
-	ServerReplicator = setmetatable({}, {
+	Replicator = setmetatable({}, {
 		__tostring = function()
-			return "ServerReplicator"
+			return "Replicator"
 		end,
 	})
-	ServerReplicator.__index = ServerReplicator
-	function ServerReplicator.new(...)
-		local self = setmetatable({}, ServerReplicator)
+	Replicator.__index = Replicator
+	function Replicator.new(...)
+		local self = setmetatable({}, Replicator)
 		return self:constructor(...) or self
 	end
-	function ServerReplicator:constructor()
+	function Replicator:constructor()
 		self.connections = {}
-		ServerReplicator.instance = self
+		Replicator.instance = self
 		Network:BindFunctions({
 			["chunked-data"] = function(player, data)
 				local mainResponse = ServerResponseBuilder.new()
@@ -25,41 +25,48 @@ do
 					local _arg0 = self.connections[key]
 					local _arg1 = "Connection " .. (key .. " missing in ServerReplicator")
 					assert(_arg0, _arg1)
-					local response = self.connections[key](player, buffer)
-					local _value = response.data
-					if _value ~= "" and _value then
-						mainResponse:SetData(response.data)
+					local replicationQueue = ReplicationQueue.new()
+					local playerResponse = self.connections[key](player, buffer, replicationQueue)
+					if playerResponse then
+						local _value = playerResponse.data
+						if _value ~= "" and _value then
+							mainResponse:SetData(playerResponse.data)
+						end
+						local _value_1 = playerResponse.errorMessage
+						if _value_1 ~= "" and _value_1 then
+							mainResponse:SetError(playerResponse.errorMessage)
+						end
+						local _value_2 = playerResponse.status
+						if _value_2 ~= "" and _value_2 then
+							mainResponse:SetStatus(playerResponse.status)
+						end
 					end
-					local _value_1 = response.errorMessage
-					if _value_1 ~= "" and _value_1 then
-						mainResponse:SetError(response.errorMessage)
+					if replicationQueue:DumpString() == "" then
+						return nil
 					end
-					local _value_2 = response.status
-					if _value_2 ~= "" and _value_2 then
-						mainResponse:SetStatus(response.status)
-					end
+					self:ReplicateExcept(player, replicationQueue)
 				end)
 				return { mainResponse }
 			end,
 		})
 	end
-	function ServerReplicator:Replicate(player, queue)
+	function Replicator:Replicate(player, queue)
 		local response = ServerResponseBuilder.new():SetData(queue:DumpString()):Build()
 		Network:FireClient(player, "chunked-data", response)
 	end
-	function ServerReplicator:ReplicateExcept(player, queue)
+	function Replicator:ReplicateExcept(player, queue)
 		local response = ServerResponseBuilder.new():SetData(queue:DumpString()):Build()
 		Network:FireOtherClients(player, "chunked-data", response)
 	end
-	function ServerReplicator:ReplicateAll(queue)
+	function Replicator:ReplicateAll(queue)
 		local response = ServerResponseBuilder.new():SetData(queue:DumpString()):Build()
 		Network:FireAllClients("chunked-data", response)
 	end
-	function ServerReplicator:Connect(key, callback)
+	function Replicator:Connect(key, callback)
 		self.connections[key] = callback
 	end
-	function ServerReplicator:Get()
-		return ServerReplicator.instance or ServerReplicator.new()
+	function Replicator:Get()
+		return Replicator.instance or Replicator.new()
 	end
 end
 do
@@ -100,6 +107,6 @@ do
 	end
 end
 return {
-	default = ServerReplicator,
+	default = Replicator,
 	ServerResponseBuilder = ServerResponseBuilder,
 }

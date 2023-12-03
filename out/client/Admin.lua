@@ -1,6 +1,5 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local HttpService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").HttpService
 local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local Input = TS.import(script, script.Parent, "Input").default
@@ -25,23 +24,21 @@ do
 	end
 	function Admin:constructor()
 		Admin.instance = self
-		-- let x = false;
-		input:Bind(Enum.KeyCode.F, Enum.UserInputState.End, function()
-			return self:SpawnUnit()
+		local x = false
+		-- input.Bind(Enum.KeyCode.F, Enum.UserInputState.End, () => this.SpawnUnit());
+		input:Bind(Enum.KeyCode.F, Enum.UserInputState.Begin, function()
+			x = true
 		end)
-		-- input.Bind(Enum.KeyCode.F, Enum.UserInputState.Begin, () => {
-		-- x = true;
-		-- });
-		-- input.Bind(Enum.KeyCode.F, Enum.UserInputState.End, () => {
-		-- x = false;
-		-- });
-		-- spawn(() => {
-		-- while (wait(0.05)) {
-		-- if (x) {
-		-- this.SpawnUnit();
-		-- }
-		-- }
-		-- });
+		input:Bind(Enum.KeyCode.F, Enum.UserInputState.End, function()
+			x = false
+		end)
+		spawn(function()
+			while { wait(0.05) } do
+				if x then
+					self:SpawnUnit()
+				end
+			end
+		end)
 	end
 	function Admin:SpawnUnit()
 		local mouseHitResult = Utils:GetMouseHit({ unitsStore.folder })
@@ -50,14 +47,17 @@ do
 			_result = _result.Position
 		end
 		if _result then
-			local id = HttpService:GenerateGUID(false)
 			local name = "Dummy"
 			local position = mouseHitResult.Position
-			local unit = Unit.new(gameStore, id, name, position)
+			local unitId = table.remove(unitsStore.freeIds, 1)
+			if not (unitId ~= 0 and (unitId == unitId and unitId)) then
+				return nil
+			end
+			local unit = Unit.new(gameStore, unitId, name, position)
 			unitsStore:Add(unit)
 			local queue = ReplicationQueue.new()
 			queue:Add("create-unit", function(buffer)
-				unitsStore:Serialize(unit, buffer)
+				return unitsStore:Serialize(unit, buffer)
 			end)
 			replicator:Replicate(queue)
 		end

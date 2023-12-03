@@ -15,8 +15,9 @@ export default class Unit extends UnitData {
 	public model: UnitModel;
 	public alignOrientation: AlignOrientation;
 	public groundAttachment: Attachment;
-	public maid = new Maid();
+	public overheadBillboard: UnitOverheadBillboard;
 
+	public maid = new Maid();
 	public pathfinding: Pathfinding;
 	public movement: UnitMovement;
 
@@ -26,19 +27,20 @@ export default class Unit extends UnitData {
 
 	constructor(
 		gameStore: GameStore,
-		id: string,
+		id: number,
 		name: string,
 		position: Vector3,
 		playerId?: number,
 		path?: Vector3[],
+		health?: number,
 	) {
-		super(id, name, position, playerId || player.UserId, path);
+		super(id, name, position, playerId || player.UserId, path, health);
 
 		this.gameStore = gameStore;
 		this.unitsStore = gameStore.GetStore("UnitsStore") as UnitsStore;
 
 		this.model = ReplicatedFirst.Units[this.name].Clone();
-		this.model.Name = this.name;
+		this.model.Name = this.name + "#" + this.id;
 		this.model.PivotTo(new CFrame(this.position));
 		this.model.Parent = Workspace.WaitForChild("UnitsCache");
 
@@ -80,6 +82,9 @@ export default class Unit extends UnitData {
 		weld.Part0 = this.selectionCircle;
 		weld.Part1 = this.model.HumanoidRootPart;
 
+		this.overheadBillboard = ReplicatedFirst.UnitOverheadBillboard.Clone();
+		this.overheadBillboard.Parent = this.model.Head;
+
 		this.movement = new UnitMovement(this);
 		this.pathfinding = new Pathfinding(this);
 
@@ -101,9 +106,11 @@ export default class Unit extends UnitData {
 		return this.model.GetPivot().Position;
 	}
 
-	private UpdateVisuals() {
+	public UpdateVisuals() {
 		const selected = this.selectionType === SelectionType.Selected;
 		this.movement.visualisation.Enable(selected);
+		this.overheadBillboard.Enabled = this.selectionType !== SelectionType.None;
+		this.overheadBillboard.HealthBar.Bar.Size = UDim2.fromScale(math.clamp(this.health / 100, 0, 1), 1);
 
 		this.selectionCircle.Transparency = this.selectionType === SelectionType.None ? 1 : 0.2;
 		this.selectionCircle.Color = selected ? Color3.fromRGB(143, 142, 145) : Color3.fromRGB(70, 70, 70);

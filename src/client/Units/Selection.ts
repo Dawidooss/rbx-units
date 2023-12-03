@@ -8,6 +8,9 @@ import { camera, player } from "client/Instances";
 import GUI from "./GUI";
 import UnitsStore from "client/DataStore/UnitsStore";
 import GameStore from "client/DataStore/GameStore";
+import Replicator from "client/DataStore/Replicator";
+import ReplicationQueue from "shared/ReplicationQueue";
+import bit from "shared/bit";
 
 export enum SelectionMethod {
 	Box,
@@ -20,6 +23,8 @@ const input = Input.Get();
 const gameStore = GameStore.Get();
 const unitsStore = gameStore.GetStore("UnitsStore") as UnitsStore;
 const gui = GUI.Get();
+
+const replicator = Replicator.Get();
 
 export default class Selection {
 	public boxSize = new Vector2();
@@ -92,7 +97,9 @@ export default class Selection {
 			const result = Utils.GetMouseHit();
 			if (!result || !result.Instance) return units;
 
-			const unit = unitsStore.cache.get(result.Instance.Parent?.Name || "");
+			const unitId = tonumber(result.Instance.Parent?.Name);
+			if (!unitId) return units;
+			const unit = unitsStore.cache.get(unitId);
 			if (!unit) return units;
 		}
 
@@ -145,16 +152,27 @@ export default class Selection {
 	}
 
 	public SelectUnits(units: Set<Unit>) {
+		const queue = new ReplicationQueue();
+
 		for (const unit of units) {
 			if (this.selectedUnits.size() >= 100) return;
 			if (this.selectedUnits.has(unit)) return;
 
-			print(unit.playerId);
-
 			if (unit.playerId !== player.UserId) continue;
+
+			// TEMPORARY
+			unit.health -= 10;
+			queue.Add("update-unit-heal", (buffer) => {
+				buffer.writeBits(...bit.ToBits(unit.id, 12));
+				buffer.writeBits(...bit.ToBits(unit.health, 7));
+				return buffer;
+			});
+
 			unit.Select(SelectionType.Selected);
 			this.selectedUnits.add(unit);
 		}
+
+		replicator.Replicate(queue);
 	}
 
 	public DeselectUnits(units: Set<Unit>) {

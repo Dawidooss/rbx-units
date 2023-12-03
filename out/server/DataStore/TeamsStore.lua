@@ -1,27 +1,28 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local TeamsStore = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "TeamStoreBase").default
-local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "ServerReplicator").default
+local TeamsStoreBase = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "TeamStoreBase").default
+local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "Replicator").default
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
+local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local replicator = ServerReplicator:Get()
-local ServerTeamsStore
+local TeamsStore
 do
-	local super = TeamsStore
-	ServerTeamsStore = setmetatable({}, {
+	local super = TeamsStoreBase
+	TeamsStore = setmetatable({}, {
 		__tostring = function()
-			return "ServerTeamsStore"
+			return "TeamsStore"
 		end,
 		__index = super,
 	})
-	ServerTeamsStore.__index = ServerTeamsStore
-	function ServerTeamsStore.new(...)
-		local self = setmetatable({}, ServerTeamsStore)
+	TeamsStore.__index = TeamsStore
+	function TeamsStore.new(...)
+		local self = setmetatable({}, TeamsStore)
 		return self:constructor(...) or self
 	end
-	function ServerTeamsStore:constructor(gameStore)
+	function TeamsStore:constructor(gameStore)
 		super.constructor(self, gameStore)
 	end
-	function ServerTeamsStore:Add(teamData, queue)
+	function TeamsStore:Add(teamData, queue)
 		super.Add(self, teamData)
 		local queuePassed = not not queue
 		local _condition = queue
@@ -30,14 +31,14 @@ do
 		end
 		queue = _condition
 		queue:Add("team-created", function(buffer)
-			self:Serialize(teamData, buffer)
+			return self:Serialize(teamData, buffer)
 		end)
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
 		end
 		return teamData
 	end
-	function ServerTeamsStore:Remove(teamId, queue)
+	function TeamsStore:Remove(teamId, queue)
 		super.Remove(self, teamId)
 		local queuePassed = not not queue
 		local _condition = queue
@@ -45,8 +46,9 @@ do
 			_condition = ReplicationQueue.new()
 		end
 		queue = _condition
-		queue:Add("team-created", function(buffer)
-			buffer.writeString(teamId)
+		queue:Add("team-removed", function(buffer)
+			buffer.writeBits(unpack(bit:ToBits(teamId, 4)))
+			return buffer
 		end)
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
@@ -54,5 +56,5 @@ do
 	end
 end
 return {
-	default = ServerTeamsStore,
+	default = TeamsStore,
 }

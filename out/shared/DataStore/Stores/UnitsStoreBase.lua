@@ -1,5 +1,6 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
+local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local Store = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Store").default
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local UnitData
@@ -17,28 +18,22 @@ do
 		local self = setmetatable({}, UnitsStoreBase)
 		return self:constructor(...) or self
 	end
-	function UnitsStoreBase:constructor(...)
-		super.constructor(self, ...)
+	function UnitsStoreBase:constructor(gameStore)
+		super.constructor(self, gameStore, 4096)
 		self.name = "UnitsStore"
-	end
-	function UnitsStoreBase:Add(unitData)
-		local _cache = self.cache
-		local _id = unitData.id
-		local _unitData = unitData
-		_cache[_id] = _unitData
-		return unitData
 	end
 	function UnitsStoreBase:SerializePath(path, buffer)
 		for _, position in path do
-			buffer.writeString("+")
-			buffer.writeVector3(position)
+			buffer.writeBits(1)
+			buffer.writeBits(unpack(bit:ToBits(math.floor(position.X), 10)))
+			buffer.writeBits(unpack(bit:ToBits(math.floor(position.Z), 10)))
 		end
-		buffer.writeString("-")
+		buffer.writeBits(0)
 	end
 	function UnitsStoreBase:DeserializePath(buffer)
 		local path = {}
-		while buffer.readString() == "+" do
-			local position = buffer.readVector3()
+		while buffer.readBits(1)[1] == 1 do
+			local position = Vector3.new(bit:FromBits(buffer.readBits(10)), 10, bit:FromBits(buffer.readBits(10)))
 			table.insert(path, position)
 		end
 		return path
@@ -49,20 +44,23 @@ do
 			_condition = BitBuffer()
 		end
 		buffer = _condition
-		buffer.writeString(unitData.id)
-		buffer.writeString(unitData.name)
-		buffer.writeVector3(unitData.position)
-		buffer.writeString(tostring(unitData.playerId))
+		buffer.writeBits(unpack(bit:ToBits(unitData.id, 12)))
+		buffer.writeBits(unpack(bit:ToBits(math.floor(unitData.position.X), 10)))
+		buffer.writeBits(unpack(bit:ToBits(math.floor(unitData.position.Z), 10)))
 		self:SerializePath(unitData.path, buffer)
+		buffer.writeBits(unpack(bit:ToBits(unitData.health, 7)))
+		buffer.writeString(tostring(unitData.playerId))
+		buffer.writeString(unitData.name)
 		return buffer
 	end
 	function UnitsStoreBase:Deserialize(buffer)
-		local id = buffer.readString()
-		local name = buffer.readString()
-		local position = buffer.readVector3()
-		local playerId = tonumber(buffer.readString())
+		local id = bit:FromBits(buffer.readBits(12))
+		local position = Vector3.new(bit:FromBits(buffer.readBits(10)), 10, bit:FromBits(buffer.readBits(10)))
 		local path = self:DeserializePath(buffer)
-		local unitData = UnitData.new(id, name, position, playerId, path)
+		local health = bit:FromBits(buffer.readBits(7))
+		local playerId = tonumber(buffer.readString())
+		local name = buffer.readString()
+		local unitData = UnitData.new(id, name, position, playerId, path, health)
 		return unitData
 	end
 end
@@ -77,15 +75,17 @@ do
 		local self = setmetatable({}, UnitData)
 		return self:constructor(...) or self
 	end
-	function UnitData:constructor(id, name, position, playerId, path)
-		self.path = {}
+	function UnitData:constructor(id, name, position, playerId, path, health)
 		self.id = id
 		self.name = name
 		self.position = position
 		self.playerId = playerId
-		if path then
-			self.path = path
+		local _condition = health
+		if not (_condition ~= 0 and (_condition == _condition and _condition)) then
+			_condition = 100
 		end
+		self.health = _condition
+		self.path = path or {}
 	end
 end
 return {

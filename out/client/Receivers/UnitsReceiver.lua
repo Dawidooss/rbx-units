@@ -4,6 +4,7 @@ local GameStore = TS.import(script, script.Parent.Parent, "DataStore", "GameStor
 local Replicator = TS.import(script, script.Parent.Parent, "DataStore", "Replicator").default
 local Unit = TS.import(script, script.Parent.Parent, "Units", "Unit").default
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
+local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local replicator = Replicator:Get()
 local gameStore = GameStore:Get()
 local unitsStore = gameStore:GetStore("UnitsStore")
@@ -31,12 +32,12 @@ do
 			unitsStore:Add(unit)
 		end)
 		replicator:Connect("unit-removed", function(buffer)
-			local unitId = buffer.readString()
+			local unitId = bit:FromBits(buffer.readBits(12))
 			unitsStore:Remove(unitId)
 		end)
 		replicator:Connect("unit-movement", function(buffer)
-			local unitId = buffer.readString()
-			local position = buffer.readVector3()
+			local unitId = bit:FromBits(buffer.readBits(12))
+			local position = Vector3.new(bit:FromBits(buffer.readBits(10)), 10, bit:FromBits(buffer.readBits(10)))
 			local path = unitsStore:DeserializePath(buffer)
 			local unit = unitsStore.cache[unitId]
 			if not unit then
@@ -44,9 +45,19 @@ do
 				return nil
 			end
 			local fakeQueue = ReplicationQueue.new()
-			unit.position = position
 			unit:UpdatePosition(position)
 			unit.movement:MoveAlongPath(path, fakeQueue)
+		end)
+		replicator:Connect("update-unit-heal", function(buffer)
+			local unitId = bit:FromBits(buffer.readBits(12))
+			local health = bit:FromBits(buffer.readBits(7))
+			local unit = unitsStore.cache[unitId]
+			if not unit then
+				-- TODO: error? fetch-all
+				return nil
+			end
+			unit.health = health
+			unit:UpdateVisuals()
 		end)
 		UnitsReceiver.instance = self
 	end

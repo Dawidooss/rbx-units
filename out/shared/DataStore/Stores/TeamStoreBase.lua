@@ -2,6 +2,7 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local Store = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Store").default
+local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local TeamsStoreBase
 do
 	local super = Store
@@ -16,16 +17,9 @@ do
 		local self = setmetatable({}, TeamsStoreBase)
 		return self:constructor(...) or self
 	end
-	function TeamsStoreBase:constructor(...)
-		super.constructor(self, ...)
+	function TeamsStoreBase:constructor(gameStore)
+		super.constructor(self, gameStore, 16)
 		self.name = "TeamsStore"
-	end
-	function TeamsStoreBase:Add(teamData)
-		local teamId = teamData.id
-		local _cache = self.cache
-		local _teamData = teamData
-		_cache[teamId] = _teamData
-		return teamData
 	end
 	function TeamsStoreBase:Serialize(teamData, buffer)
 		local _condition = buffer
@@ -33,14 +27,14 @@ do
 			_condition = BitBuffer()
 		end
 		buffer = _condition
-		buffer.writeString(teamData.id)
+		buffer.writeBits(unpack(bit:ToBits(teamData.id, 4)))
 		buffer.writeString(teamData.name)
 		buffer.writeColor3(teamData.color)
 		return buffer
 	end
 	function TeamsStoreBase:Deserialize(buffer)
 		return {
-			id = buffer.readString(),
+			id = bit:FromBits(buffer.readBits(4)),
 			name = buffer.readString(),
 			color = buffer.readColor3(),
 		}

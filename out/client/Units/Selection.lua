@@ -13,6 +13,9 @@ local camera = _Instances.camera
 local player = _Instances.player
 local GUI = TS.import(script, script.Parent, "GUI").default
 local GameStore = TS.import(script, script.Parent.Parent, "DataStore", "GameStore").default
+local Replicator = TS.import(script, script.Parent.Parent, "DataStore", "Replicator").default
+local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
+local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local SelectionMethod
 do
 	local _inverse = {}
@@ -30,6 +33,7 @@ local input = Input:Get()
 local gameStore = GameStore:Get()
 local unitsStore = gameStore:GetStore("UnitsStore")
 local gui = GUI:Get()
+local replicator = Replicator:Get()
 local Selection
 do
 	Selection = setmetatable({}, {
@@ -92,16 +96,15 @@ do
 			if not result or not result.Instance then
 				return units
 			end
-			local _cache = unitsStore.cache
 			local _result = result.Instance.Parent
 			if _result ~= nil then
 				_result = _result.Name
 			end
-			local _condition = _result
-			if not (_condition ~= "" and _condition) then
-				_condition = ""
+			local unitId = tonumber(_result)
+			if not (unitId ~= 0 and (unitId == unitId and unitId)) then
+				return units
 			end
-			local unit = _cache[_condition]
+			local unit = unitsStore.cache[unitId]
 			if not unit then
 				return units
 			end
@@ -161,6 +164,7 @@ do
 		table.clear(self.selectedUnits)
 	end
 	function Selection:SelectUnits(units)
+		local queue = ReplicationQueue.new()
 		for unit in units do
 			-- ▼ ReadonlySet.size ▼
 			local _size = 0
@@ -174,13 +178,20 @@ do
 			if self.selectedUnits[unit] ~= nil then
 				return nil
 			end
-			print(unit.playerId)
 			if unit.playerId ~= player.UserId then
 				continue
 			end
+			-- TEMPORARY
+			unit.health -= 10
+			queue:Add("update-unit-heal", function(buffer)
+				buffer.writeBits(unpack(bit:ToBits(unit.id, 12)))
+				buffer.writeBits(unpack(bit:ToBits(unit.health, 7)))
+				return buffer
+			end)
 			unit:Select(SelectionType.Selected)
 			self.selectedUnits[unit] = true
 		end
+		replicator:Replicate(queue)
 	end
 	function Selection:DeselectUnits(units)
 		local _units = units

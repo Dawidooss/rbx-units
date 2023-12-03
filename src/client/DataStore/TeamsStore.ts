@@ -3,6 +3,7 @@ import BitBuffer = require("@rbxts/bitbuffer");
 import Replicator from "./Replicator";
 import TeamsStoreBase from "shared/DataStore/Stores/TeamStoreBase";
 import GameStore from "./GameStore";
+import bit from "shared/bit";
 
 const replicator = Replicator.Get();
 
@@ -19,7 +20,7 @@ export default class TeamsStore extends TeamsStoreBase {
 		});
 
 		replicator.Connect("team-removed", (buffer: BitBuffer) => {
-			const teamId = buffer.readString();
+			const teamId = bit.FromBits(buffer.readBits(4));
 			this.Remove(teamId);
 		});
 	}

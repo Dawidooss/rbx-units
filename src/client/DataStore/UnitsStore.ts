@@ -5,7 +5,7 @@ import Unit from "client/Units/Unit";
 import UnitsStoreBase from "shared/DataStore/Stores/UnitsStoreBase";
 
 export default class UnitsStore extends UnitsStoreBase {
-	public cache = new Map<string, Unit>();
+	public cache = new Map<number, Unit>();
 	public folder = new Instance("Folder", Workspace);
 
 	constructor(gameStore: GameStore) {
@@ -18,7 +18,7 @@ export default class UnitsStore extends UnitsStoreBase {
 		return unit;
 	}
 
-	public Remove(unitId: string) {
+	public Remove(unitId: number) {
 		const unit = this.cache.get(unitId);
 		unit?.Destroy();
 
@@ -36,7 +36,7 @@ export default class UnitsStore extends UnitsStoreBase {
 	public OverrideData(buffer: BitBuffer): void {
 		this.Clear();
 
-		while (buffer.readString() === "+") {
+		while (buffer.readBits(1)[0] === 1) {
 			const unitData = this.Deserialize(buffer);
 			const unit = new Unit(
 				this.gameStore as GameStore,
@@ -45,6 +45,7 @@ export default class UnitsStore extends UnitsStoreBase {
 				unitData.position,
 				unitData.playerId,
 				unitData.path,
+				unitData.health,
 			);
 			this.Add(unit);
 		}

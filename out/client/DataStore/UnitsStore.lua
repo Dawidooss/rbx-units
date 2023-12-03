@@ -49,9 +49,9 @@ do
 	end
 	function UnitsStore:OverrideData(buffer)
 		self:Clear()
-		while buffer.readString() == "+" do
+		while buffer.readBits(1)[1] == 1 do
 			local unitData = self:Deserialize(buffer)
-			local unit = Unit.new(self.gameStore, unitData.id, unitData.name, unitData.position, unitData.playerId, unitData.path)
+			local unit = Unit.new(self.gameStore, unitData.id, unitData.name, unitData.position, unitData.playerId, unitData.path, unitData.health)
 			self:Add(unit)
 		end
 	end

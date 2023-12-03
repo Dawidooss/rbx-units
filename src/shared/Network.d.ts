@@ -17,15 +17,15 @@ interface Network {
 	BindEvents(events: { [key: string]: Callback }): void;
 
 	// **SERVER API**
-	FireClient(client: Player, name: string, response: ServerResponse): void;
-	FireAllClients(name: string, response: ServerResponse): void;
-	FireOtherClients(ignoreClient: Player, name: string, response: ServerResponse): void;
+	FireClient(client: Player, name: string, response: string): void;
+	FireAllClients(name: string, response: string): void;
+	FireOtherClients(ignoreClient: Player, name: string, response: string): void;
 
-	FireOtherClientsWithinDistance(ignoreClient: Player, distance: number, name: string, response: ServerResponse): void; // prettier-ignore
-	FireAllClientsWithinDistance(position: Vector3, distance: number, name: string, response: ServerResponse): void;
+	FireOtherClientsWithinDistance(ignoreClient: Player, distance: number, name: string, response: string): void; // prettier-ignore
+	FireAllClientsWithinDistance(position: Vector3, distance: number, name: string, response: string): void;
 
-	InvokeClient(client: Player, name: string, response: ServerResponse): [...args: any];
-	InvokeClientWithTimeout(timeout: number, client: Player, name: string, response: ServerResponse): [...args: any];
+	InvokeClient(client: Player, name: string, response: string): [...args: any];
+	InvokeClientWithTimeout(timeout: number, client: Player, name: string, response: string): [...args: any];
 
 	LogTraffic(duration: number): void;
 

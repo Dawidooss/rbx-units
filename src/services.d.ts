@@ -1,6 +1,7 @@
 type UnitModel = Model & {
 	Humanoid: Humanoid;
 	HumanoidRootPart: BasePart;
+	Head: BasePart;
 };
 
 type SelectionCirle = BasePart & {
@@ -13,6 +14,12 @@ type ServerResponse = {
 	data?: string;
 	error: boolean;
 	errorMessage?: string;
+};
+
+type UnitOverheadBillboard = BillboardGui & {
+	HealthBar: Frame & {
+		Bar: Frame;
+	};
 };
 
 type ActionCircle = Model & {
@@ -34,6 +41,7 @@ interface ReplicatedFirst extends Instance {
 	Units: Folder & {
 		[unitName: string]: UnitModel;
 	};
+	UnitOverheadBillboard: UnitOverheadBillboard;
 }
 
 interface Workspace extends Instance {

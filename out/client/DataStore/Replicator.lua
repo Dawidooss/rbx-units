@@ -50,7 +50,9 @@ do
 	Replicator.FetchAll = TS.async(function(self)
 		local promise = TS.Promise.new(TS.async(function(resolve, reject)
 			local queue = ReplicationQueue.new()
-			queue:Add("fetch-all")
+			queue:Add("fetch-all", function(buffer)
+				return buffer
+			end)
 			local response = TS.await(self:Replicate(queue))
 			local _condition = response.error
 			if not _condition then

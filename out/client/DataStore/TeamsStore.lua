@@ -3,6 +3,7 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local Replicator = TS.import(script, script.Parent, "Replicator").default
 local TeamsStoreBase = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "TeamStoreBase").default
+local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local replicator = Replicator:Get()
 local TeamsStore
 do
@@ -30,7 +31,7 @@ do
 			self:Add(teamData)
 		end)
 		replicator:Connect("team-removed", function(buffer)
-			local teamId = buffer.readString()
+			local teamId = bit:FromBits(buffer.readBits(4))
 			self:Remove(teamId)
 		end)
 	end

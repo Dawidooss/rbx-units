@@ -13,15 +13,12 @@ do
 		local self = setmetatable({}, ReplicationQueue)
 		return self:constructor(...) or self
 	end
-	function ReplicationQueue:constructor()
-		self.buffer = BitBuffer()
+	function ReplicationQueue:constructor(initialBufferData)
+		self.buffer = BitBuffer(initialBufferData)
 	end
 	function ReplicationQueue:Add(key, writeCallback)
 		self.buffer.writeString(key)
-		local _result = writeCallback
-		if _result ~= nil then
-			_result(self.buffer)
-		end
+		self.buffer = writeCallback(self.buffer)
 	end
 	function ReplicationQueue:DumpString()
 		return self.buffer.dumpString()

@@ -1,13 +1,12 @@
-import Replicator from "./ServerReplicator";
-import ServerGameStore from "./ServerGameStore";
-import PlayersStore, { PlayerData } from "shared/DataStore/Stores/PlayersStoreBase";
+import ServerGameStore from "./GameStore";
+import PlayersStoreBase, { PlayerData } from "shared/DataStore/Stores/PlayersStoreBase";
 import BitBuffer from "@rbxts/bitbuffer";
-import ServerReplicator from "./ServerReplicator";
+import ServerReplicator from "./Replicator";
 import ReplicationQueue from "shared/ReplicationQueue";
 
 const replicator = ServerReplicator.Get();
 
-export default class ServerPlayersStore extends PlayersStore {
+export default class PlayersStore extends PlayersStoreBase {
 	constructor(gameStore: ServerGameStore) {
 		super(gameStore);
 	}
@@ -18,7 +17,7 @@ export default class ServerPlayersStore extends PlayersStore {
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
 		queue.Add("player-added", (buffer: BitBuffer) => {
-			this.Serialize(playerData, buffer);
+			return this.Serialize(playerData, buffer);
 		});
 
 		if (!queuePassed) {
@@ -28,13 +27,14 @@ export default class ServerPlayersStore extends PlayersStore {
 		return playerData;
 	}
 
-	public Remove(playerId: string, queue?: ReplicationQueue): void {
+	public Remove(playerId: number, queue?: ReplicationQueue): void {
 		super.Remove(playerId);
 
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
-		queue.Add("player-added", (buffer: BitBuffer) => {
-			buffer.writeString(playerId);
+		queue.Add("player-removed", (buffer: BitBuffer) => {
+			buffer.writeString(tostring(playerId));
+			return buffer;
 		});
 
 		if (!queuePassed) {
