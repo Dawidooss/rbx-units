@@ -26,33 +26,21 @@ do
 			self:Add(unitData, replicationQueue)
 		end)
 		replicator:Connect("unit-movement", function(player, buffer, replicationQueue)
-			debug.profilebegin("unit-movement")
-			debug.profilebegin("reading-bits")
-			local idBits = buffer.readBits(12)
-			local xBits = buffer.readBits(10)
-			local yBits = buffer.readBits(10)
-			local unitId = bit:FromBits(idBits)
-			local position = Vector3.new(bit:FromBits(xBits), 10, bit:FromBits(yBits))
+			local startPointer = buffer.getPointer()
+			local unitId = bit:FromBits(buffer.readBits(12))
+			local position = Vector3.new(bit:FromBits(buffer.readBits(10)), 10, bit:FromBits(buffer.readBits(10)))
 			local unit = self.cache[unitId]
-			debug.profileend()
+			local path = self:DeserializePath(buffer)
+			local endPointer = buffer.getPointer()
 			if not unit then
 				return nil
 			end
-			debug.profilebegin("deserialisation")
-			local path = self:DeserializePath(buffer)
 			unit.path = path
 			unit.position = position
-			debug.profileend()
-			debug.profilebegin("replication")
 			replicationQueue:Add("unit-movement", function(writeBuffer)
-				writeBuffer.writeBits(unpack(idBits))
-				writeBuffer.writeBits(unpack(xBits))
-				writeBuffer.writeBits(unpack(yBits))
-				self:DeserializePath(writeBuffer)
+				buffer.setPointer(startPointer)
 				return writeBuffer
 			end)
-			debug.profileend()
-			debug.profileend()
 		end)
 		replicator:Connect("update-unit-heal", function(player, buffer, replicationQueue)
 			local unitId = bit:FromBits(buffer.readBits(12))

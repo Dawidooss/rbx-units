@@ -1,9 +1,7 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local GameStoreBase = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "GameStoreBase").default
-local _Replicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "Replicator")
-local ServerReplicator = _Replicator.default
-local ServerResponseBuilder = _Replicator.ServerResponseBuilder
+local ServerReplicator = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "Replicator").default
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local replicator = ServerReplicator:Get()
 local GameStore
@@ -32,7 +30,7 @@ do
 				responseBuffer.writeString(storeName)
 				store:SerializeCache(responseBuffer)
 			end
-			return ServerResponseBuilder.new():SetData(responseBuffer.dumpString()):Build()
+			responseBuffer.dumpString()
 		end)
 	end
 	function GameStore:Get()

@@ -49,7 +49,7 @@ export default class Replicator {
 
 	public Connect(
 		key: string,
-		callback: (player: Player, buffer: BitBuffer, replicationQueue: ReplicationQueue) => ServerResponse | void,
+		callback: (player: Player, buffer: BitBuffer, replicationQueue: ReplicationQueue) => string | void,
 	) {
 		this.connections[key] = callback;
 	}

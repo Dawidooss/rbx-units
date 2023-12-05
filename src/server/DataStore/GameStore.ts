@@ -1,5 +1,5 @@
 import GameStoreBase from "shared/DataStore/Stores/GameStoreBase";
-import ServerReplicator, { ServerResponseBuilder } from "./Replicator";
+import ServerReplicator from "./Replicator";
 import BitBuffer from "@rbxts/bitbuffer";
 
 const replicator = ServerReplicator.Get();
@@ -19,7 +19,7 @@ export default class GameStore extends GameStoreBase {
 				store.SerializeCache(responseBuffer);
 			}
 
-			return new ServerResponseBuilder().SetData(responseBuffer.dumpString()).Build();
+			responseBuffer.dumpString();
 		});
 	}
 

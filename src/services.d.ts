@@ -9,13 +9,6 @@ type SelectionCirle = BasePart & {
 	Attachment: Attachment;
 };
 
-type ServerResponse = {
-	status: string;
-	data?: string;
-	error: boolean;
-	errorMessage?: string;
-};
-
 type UnitOverheadBillboard = BillboardGui & {
 	HealthBar: Frame & {
 		Bar: Frame;

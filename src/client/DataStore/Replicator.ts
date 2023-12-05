@@ -11,11 +11,8 @@ export default class Replicator {
 		Replicator.instance = this;
 
 		Network.BindEvents({
-			"chunked-data": (response: ServerResponse) => {
+			"chunked-data": (data: string) => {
 				if (!this.replicationEnabled) return;
-				const data = response.data as string;
-				if (!data) return;
-
 				ReplicationQueue.Divide(data, (key: string, buffer: BitBuffer) => {
 					assert(this.connections[key], `Connection ${key} missing in ClientReplicator`);
 					this.connections[key](buffer);
@@ -24,9 +21,9 @@ export default class Replicator {
 		});
 	}
 
-	public async Replicate(queue: ReplicationQueue): Promise<ServerResponse> {
-		const promise = new Promise<ServerResponse>((resolve, reject) => {
-			const response = Network.InvokeServer("chunked-data", queue.DumpString())[0] as ServerResponse;
+	public async Replicate(queue: ReplicationQueue): Promise<string> {
+		const promise = new Promise<string>((resolve, reject) => {
+			const response = Network.InvokeServer("chunked-data", queue.DumpString())[0] as string;
 			resolve(response);
 		});
 
@@ -42,15 +39,9 @@ export default class Replicator {
 			const queue = new ReplicationQueue();
 			queue.Add("fetch-all", (buffer) => buffer);
 
-			const response = await this.Replicate(queue);
+			const data = await this.Replicate(queue);
 
-			if (response.error || !response.data) {
-				// CRASH GAME!?!? TODO:
-				reject();
-				return;
-			}
-
-			const buffer = BitBuffer(response.data);
+			const buffer = BitBuffer(data);
 			resolve(buffer);
 		});
 

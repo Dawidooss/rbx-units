@@ -20,12 +20,8 @@ do
 		self.connections = {}
 		Replicator.instance = self
 		Network:BindEvents({
-			["chunked-data"] = function(response)
+			["chunked-data"] = function(data)
 				if not self.replicationEnabled then
-					return nil
-				end
-				local data = response.data
-				if not (data ~= "" and data) then
 					return nil
 				end
 				ReplicationQueue:Divide(data, function(key, buffer)
@@ -53,18 +49,8 @@ do
 			queue:Add("fetch-all", function(buffer)
 				return buffer
 			end)
-			local response = TS.await(self:Replicate(queue))
-			local _condition = response.error
-			if not _condition then
-				local _value = response.data
-				_condition = not (_value ~= "" and _value)
-			end
-			if _condition then
-				-- CRASH GAME!?!? TODO:
-				reject()
-				return nil
-			end
-			local buffer = BitBuffer(response.data)
+			local data = TS.await(self:Replicate(queue))
+			local buffer = BitBuffer(data)
 			resolve(buffer)
 		end))
 		return promise
