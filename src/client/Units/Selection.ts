@@ -7,10 +7,8 @@ import Input from "client/Input";
 import { camera, player } from "client/Instances";
 import GUI from "./GUI";
 import UnitsStore from "client/DataStore/UnitsStore";
-import GameStore from "client/DataStore/GameStore";
 import Replicator from "client/DataStore/Replicator";
 import ReplicationQueue from "shared/ReplicationQueue";
-import bit from "shared/bit";
 
 export enum SelectionMethod {
 	Box,
@@ -20,8 +18,7 @@ export enum SelectionMethod {
 
 const input = Input.Get();
 
-const gameStore = GameStore.Get();
-const unitsStore = gameStore.GetStore("UnitsStore") as UnitsStore;
+const unitsStore = UnitsStore.Get();
 const gui = GUI.Get();
 
 const replicator = Replicator.Get();
@@ -159,14 +156,6 @@ export default class Selection {
 			if (this.selectedUnits.has(unit)) return;
 
 			if (unit.playerId !== player.UserId) continue;
-
-			// TEMPORARY
-			unit.health -= 10;
-			queue.Add("update-unit-heal", (buffer) => {
-				buffer.writeBits(...bit.ToBits(unit.id, 12));
-				buffer.writeBits(...bit.ToBits(unit.health, 7));
-				return buffer;
-			});
 
 			unit.Select(SelectionType.Selected);
 			this.selectedUnits.add(unit);

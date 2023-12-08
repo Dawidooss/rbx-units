@@ -2,7 +2,6 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Network = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Network")
 local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
-local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local Replicator
 do
 	Replicator = setmetatable({}, {
@@ -20,41 +19,29 @@ do
 		self.connections = {}
 		Replicator.instance = self
 		Network:BindEvents({
-			["chunked-data"] = function(data)
-				if not self.replicationEnabled then
-					return nil
+			["chunked-data"] = function(...)
+				local queue = { ... }
+				return function()
+					if not self.replicationEnabled then
+						return nil
+					end
+					for _, data in queue do
+						local buffer = BitBuffer(data)
+						local key = buffer.readString()
+						self.connections[key][2](data)
+					end
 				end
-				ReplicationQueue:Divide(data, function(key, buffer)
-					local _arg0 = self.connections[key]
-					local _arg1 = "Connection " .. (key .. " missing in ClientReplicator")
-					assert(_arg0, _arg1)
-					self.connections[key](buffer)
-				end)
 			end,
 		})
 	end
+	Replicator.ChunkedDataReceived = TS.async(function(self, data) end)
 	Replicator.Replicate = TS.async(function(self, queue)
-		local promise = TS.Promise.new(function(resolve, reject)
-			local response = Network:InvokeServer("chunked-data", queue:DumpString())[1]
-			resolve(response)
-		end)
-		return promise
+		local response = Network:InvokeServer("chunked-data", queue:Dump())
+		-- TODO: handle response
 	end)
-	function Replicator:Connect(key, callback)
-		self.connections[key] = callback
+	function Replicator:Connect(key, deserializer, callback)
+		self.connections[key] = { deserializer, callback }
 	end
-	Replicator.FetchAll = TS.async(function(self)
-		local promise = TS.Promise.new(TS.async(function(resolve, reject)
-			local queue = ReplicationQueue.new()
-			queue:Add("fetch-all", function(buffer)
-				return buffer
-			end)
-			local data = TS.await(self:Replicate(queue))
-			local buffer = BitBuffer(data)
-			resolve(buffer)
-		end))
-		return promise
-	end)
 	function Replicator:Get()
 		return Replicator.instance or Replicator.new()
 	end

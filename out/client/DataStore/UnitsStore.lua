@@ -1,8 +1,9 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
-local Unit = TS.import(script, script.Parent.Parent, "Units", "Unit").default
 local UnitsStoreBase = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "UnitsStoreBase").default
+local Replicator = TS.import(script, script.Parent, "Replicator").default
+local replicator = Replicator:Get()
 local UnitsStore
 do
 	local super = UnitsStoreBase
@@ -17,11 +18,12 @@ do
 		local self = setmetatable({}, UnitsStore)
 		return self:constructor(...) or self
 	end
-	function UnitsStore:constructor(gameStore)
-		super.constructor(self, gameStore)
+	function UnitsStore:constructor()
+		super.constructor(self)
 		self.cache = {}
 		self.folder = Instance.new("Folder", Workspace)
 		self.folder.Name = "UnitsCache"
+		UnitsStore.instance = self
 	end
 	function UnitsStore:Add(unit)
 		super.Add(self, unit)
@@ -47,13 +49,12 @@ do
 		end
 		super.Clear(self)
 	end
-	function UnitsStore:OverrideData(buffer)
+	function UnitsStore:OverrideCache(newCache)
 		self:Clear()
-		while buffer.readBits(1)[1] == 1 do
-			local unitData = self:Deserialize(buffer)
-			local unit = Unit.new(self.gameStore, unitData.id, unitData.name, unitData.position, unitData.playerId, unitData.path, unitData.health)
-			self:Add(unit)
-		end
+		self.cache = newCache
+	end
+	function UnitsStore:Get()
+		return UnitsStore.instance or UnitsStore.new()
 	end
 end
 return {

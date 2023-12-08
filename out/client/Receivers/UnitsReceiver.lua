@@ -1,13 +1,11 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
-local GameStore = TS.import(script, script.Parent.Parent, "DataStore", "GameStore").default
 local Replicator = TS.import(script, script.Parent.Parent, "DataStore", "Replicator").default
+local UnitsStore = TS.import(script, script.Parent.Parent, "DataStore", "UnitsStore").default
 local Unit = TS.import(script, script.Parent.Parent, "Units", "Unit").default
-local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
-local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
+local Sedes = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Sedes").Sedes
 local replicator = Replicator:Get()
-local gameStore = GameStore:Get()
-local unitsStore = gameStore:GetStore("UnitsStore")
+local unitsStore = UnitsStore:Get()
 local UnitsReceiver
 do
 	UnitsReceiver = setmetatable({}, {
@@ -21,43 +19,52 @@ do
 		return self:constructor(...) or self
 	end
 	function UnitsReceiver:constructor()
-		replicator:Connect("unit-created", function(buffer)
-			local unitData = unitsStore:Deserialize(buffer)
+		replicator:Connect("unit-created", unitsStore.serializer, function(unitData)
 			local _cache = unitsStore.cache
 			local _id = unitData.id
 			if _cache[_id] ~= nil then
 				return nil
 			end
-			local unit = Unit.new(gameStore, unitData.id, unitData.name, unitData.position, unitData.playerId, unitData.path)
+			local unit = Unit.new(unitData.id, unitData)
 			unitsStore:Add(unit)
 		end)
-		replicator:Connect("unit-removed", function(buffer)
-			local unitId = bit:FromBits(buffer.readBits(12))
-			unitsStore:Remove(unitId)
-		end)
-		replicator:Connect("unit-movement", function(buffer)
-			local unitId = bit:FromBits(buffer.readBits(12))
-			local position = Vector3.new(bit:FromBits(buffer.readBits(10)), 10, bit:FromBits(buffer.readBits(10)))
-			local path = unitsStore:DeserializePath(buffer)
-			local unit = unitsStore.cache[unitId]
-			if not unit then
-				-- TODO: error? fetch-all
-				return nil
+		-- replicator.Connect("unit-removed", (buffer: BitBuffer) => {
+		-- const unitId = bit.FromBits(buffer.readBits(12));
+		-- unitsStore.Remove(unitId);
+		-- });
+		-- replicator.Connect("unit-movement", (buffer: BitBuffer) => {
+		-- const unitId = bit.FromBits(buffer.readBits(12));
+		-- const position = new Vector3(bit.FromBits(buffer.readBits(10)), 10, bit.FromBits(buffer.readBits(10)));
+		-- const path = unitsStore.DeserializePath(buffer);
+		-- const unit = unitsStore.cache.get(unitId);
+		-- if (!unit) {
+		-- // TODO: error? fetch-all
+		-- return;
+		-- }
+		-- const fakeQueue = new ReplicationQueue();
+		-- unit.UpdatePosition(position);
+		-- unit.movement.MoveAlongPath(path, fakeQueue);
+		-- });
+		-- replicator.Connect("update-unit-heal", (buffer: BitBuffer) => {
+		-- const unitId = bit.FromBits(buffer.readBits(12));
+		-- const health = bit.FromBits(buffer.readBits(7));
+		-- const unit = unitsStore.cache.get(unitId);
+		-- if (!unit) {
+		-- // TODO: error? fetch-all
+		-- return;
+		-- }
+		-- unit.health = health;
+		-- unit.UpdateVisuals();
+		-- });
+		-- fetching connection
+		local fetchSerializer = Sedes.Serializer.new({ { "data", Sedes.ToDict(Sedes.ToUnsigned(12), unitsStore.serializer) } })
+		replicator:Connect("units-store", fetchSerializer, function(data)
+			local newCache = {}
+			for unitId, unitData in data.data do
+				local _unit = Unit.new(unitId, unitData)
+				newCache[unitId] = _unit
 			end
-			local fakeQueue = ReplicationQueue.new()
-			unit:UpdatePosition(position)
-			unit.movement:MoveAlongPath(path, fakeQueue)
-		end)
-		replicator:Connect("update-unit-heal", function(buffer)
-			local unitId = bit:FromBits(buffer.readBits(12))
-			local health = bit:FromBits(buffer.readBits(7))
-			local unit = unitsStore.cache[unitId]
-			if not unit then
-				-- TODO: error? fetch-all
-				return nil
-			end
-			unit.health = health
-			unit:UpdateVisuals()
+			unitsStore:OverrideCache(newCache)
 		end)
 		UnitsReceiver.instance = self
 	end

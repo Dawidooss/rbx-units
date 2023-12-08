@@ -4,13 +4,17 @@ local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts
 local Store
 do
 	Store = {}
-	function Store:constructor(gameStore, max)
+	function Store:constructor(serializer, max)
 		self.name = "Store"
 		self.cache = {}
 		self.freeIds = {}
 		self.max = 0
-		self.gameStore = gameStore
 		self.max = max
+		self.serializer = serializer
+		self:CalculateFreeIds()
+	end
+	function Store:CalculateFreeIds()
+		table.clear(self.freeIds)
 		do
 			local i = 0
 			local _shouldIncrement = false
@@ -20,34 +24,22 @@ do
 				else
 					_shouldIncrement = true
 				end
-				if not (i < max) then
+				if not (i < self.max) then
 					break
 				end
-				local _freeIds = self.freeIds
+				local _cache = self.cache
 				local _i = i
-				table.insert(_freeIds, _i)
+				if not _cache[_i] then
+					local _freeIds = self.freeIds
+					local _i_1 = i
+					table.insert(_freeIds, _i_1)
+				end
 			end
 		end
 	end
-	function Store:OverrideData(buffer)
+	function Store:OverrideCache(newCache)
 		self:Clear()
-		while buffer.readBits(1)[1] == 1 do
-			local data = self:Deserialize(buffer)
-			self:Add(data)
-		end
-	end
-	function Store:SerializeCache(buffer)
-		local _condition = buffer
-		if not buffer then
-			_condition = BitBuffer()
-		end
-		buffer = _condition
-		for _, data in self.cache do
-			buffer.writeBits(1)
-			self:Serialize(data, buffer)
-		end
-		buffer.writeBits(0)
-		return buffer
+		self.cache = newCache
 	end
 	function Store:Remove(key)
 		local _cache = self.cache
@@ -56,9 +48,6 @@ do
 		local _freeIds = self.freeIds
 		local _key_1 = key
 		table.insert(_freeIds, _key_1)
-	end
-	function Store:Clear()
-		table.clear(self.cache)
 	end
 	function Store:Add(value)
 		local _cache = self.cache
@@ -83,6 +72,22 @@ do
 			table.remove(self.freeIds, i + 1)
 		end
 		return value
+	end
+	function Store:Clear()
+		table.clear(self.cache)
+	end
+	function Store:SerializeCache(buffer)
+		local _condition = buffer
+		if not buffer then
+			_condition = BitBuffer()
+		end
+		buffer = _condition
+		for _, data in self.cache do
+			buffer.writeBits(1)
+			self.serializer.Ser(data, buffer)
+		end
+		buffer.writeBits(0)
+		return buffer
 	end
 end
 return {

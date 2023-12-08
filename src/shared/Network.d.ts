@@ -17,23 +17,23 @@ interface Network {
 	BindEvents(events: { [key: string]: Callback }): void;
 
 	// **SERVER API**
-	FireClient(client: Player, name: string, response: string): void;
-	FireAllClients(name: string, response: string): void;
-	FireOtherClients(ignoreClient: Player, name: string, response: string): void;
+	FireClient(client: Player, name: string, queue: string[]): void;
+	FireAllClients(name: string, queue: string[]): void;
+	FireOtherClients(ignoreClient: Player, name: string, queue: string[]): void;
 
-	FireOtherClientsWithinDistance(ignoreClient: Player, distance: number, name: string, response: string): void; // prettier-ignore
-	FireAllClientsWithinDistance(position: Vector3, distance: number, name: string, response: string): void;
+	FireOtherClientsWithinDistance(ignoreClient: Player, distance: number, name: string, queue: string[]): void; // prettier-ignore
+	FireAllClientsWithinDistance(position: Vector3, distance: number, name: string, queue: string[]): void;
 
-	InvokeClient(client: Player, name: string, response: string): [...args: any];
-	InvokeClientWithTimeout(timeout: number, client: Player, name: string, response: string): [...args: any];
+	InvokeClient(client: Player, name: string, queue: string[]): [...args: any];
+	InvokeClientWithTimeout(timeout: number, client: Player, name: string, queue: string[]): [...args: any];
 
 	LogTraffic(duration: number): void;
 
 	// **CLIENT API**
-	FireServer(name: string, ...args: any): void;
+	FireServer(name: string, queue: string[]): void;
 
-	InvokeServer(name: string, ...args: any): [...args: any];
-	InvokeServerWithTimeout(timeout: number, name: string, ...args: any): [...args: any];
+	InvokeServer(name: string, queue: string[]): [...args: any];
+	InvokeServerWithTimeout(timeout: number, name: string, queue: string[]): [...args: any];
 }
 
 declare const Network: Network;

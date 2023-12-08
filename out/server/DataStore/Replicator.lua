@@ -1,6 +1,7 @@
 -- Compiled with roblox-ts v2.1.1
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Network = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Network")
+local BitBuffer = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "bitbuffer", "src", "roblox")
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local Replicator
 do
@@ -18,34 +19,34 @@ do
 		self.connections = {}
 		Replicator.instance = self
 		Network:BindFunctions({
-			["chunked-data"] = function(player, data)
-				local responseQueue = ReplicationQueue.new()
-				local replicationQueue = ReplicationQueue.new()
-				ReplicationQueue:Divide(data, function(key, buffer)
-					local _arg0 = self.connections[key]
-					local _arg1 = "Connection " .. (key .. " missing in ServerReplicator")
-					assert(_arg0, _arg1)
-					self.connections[key](player, buffer, responseQueue, replicationQueue)
-				end)
-				if replicationQueue:DumpString() ~= "" then
-					-- is not empty
-					self:ReplicateExcept(player, replicationQueue)
+			["chunked-data"] = function(player, ...)
+				local queue = { ... }
+				local response = ReplicationQueue.new()
+				local replication = ReplicationQueue.new()
+				for _, data in queue do
+					local buffer = BitBuffer(data)
+					local key = buffer.readString()
+					self.connections[key][2](player, data, response, replication)
 				end
-				return { responseQueue:DumpString() }
+				if #replication.queue > 0 then
+					self:ReplicateExcept(player, replication)
+				end
+				return replication:Dump()
 			end,
 		})
 	end
 	function Replicator:Replicate(player, queue)
-		Network:FireClient(player, "chunked-data", queue:DumpString())
+		Network:FireClient(player, "chunked-data", queue:Dump())
 	end
 	function Replicator:ReplicateExcept(player, queue)
-		Network:FireOtherClients(player, "chunked-data", queue:DumpString())
+		Network:FireOtherClients(player, "chunked-data", queue:Dump())
 	end
 	function Replicator:ReplicateAll(queue)
-		Network:FireAllClients("chunked-data", queue:DumpString())
+		Network:FireAllClients("chunked-data", queue:Dump())
 	end
-	function Replicator:Connect(key, callback)
-		self.connections[key] = callback
+	function Replicator:Connect(key, deserializer, callback)
+		-- TODO: add response to callbakc
+		self.connections[key] = { deserializer, callback }
 	end
 	function Replicator:Get()
 		return Replicator.instance or Replicator.new()

@@ -21,7 +21,6 @@
     "@rbxts/maid": "^1.1.0",
     "@rbxts/services": "^1.5.1",
     "@rbxts/signal": "^1.1.1",
-    "@rbxts/squash": "^1.1.6-ts.2",
     "io-serve": "^1.1.2"
   }
 }

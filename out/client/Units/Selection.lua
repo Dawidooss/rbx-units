@@ -12,10 +12,9 @@ local _Instances = TS.import(script, script.Parent.Parent, "Instances")
 local camera = _Instances.camera
 local player = _Instances.player
 local GUI = TS.import(script, script.Parent, "GUI").default
-local GameStore = TS.import(script, script.Parent.Parent, "DataStore", "GameStore").default
+local UnitsStore = TS.import(script, script.Parent.Parent, "DataStore", "UnitsStore").default
 local Replicator = TS.import(script, script.Parent.Parent, "DataStore", "Replicator").default
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
-local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
 local SelectionMethod
 do
 	local _inverse = {}
@@ -30,8 +29,7 @@ do
 	_inverse[2] = "None"
 end
 local input = Input:Get()
-local gameStore = GameStore:Get()
-local unitsStore = gameStore:GetStore("UnitsStore")
+local unitsStore = UnitsStore:Get()
 local gui = GUI:Get()
 local replicator = Replicator:Get()
 local Selection
@@ -181,13 +179,6 @@ do
 			if unit.playerId ~= player.UserId then
 				continue
 			end
-			-- TEMPORARY
-			unit.health -= 10
-			queue:Add("update-unit-heal", function(buffer)
-				buffer.writeBits(unpack(bit:ToBits(unit.id, 12)))
-				buffer.writeBits(unpack(bit:ToBits(unit.health, 7)))
-				return buffer
-			end)
 			unit:Select(SelectionType.Selected)
 			self.selectedUnits[unit] = true
 		end

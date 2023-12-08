@@ -1,30 +1,16 @@
-import BitBuffer from "@rbxts/bitbuffer";
 import Store from "../Store";
-import bit from "shared/bit";
-import GameStoreBase from "./GameStoreBase";
+import { Sedes } from "shared/Sedes";
 
 export default class TeamsStoreBase extends Store<TeamData> {
 	public name = "TeamsStore";
 
-	constructor(gameStore: GameStoreBase) {
-		super(gameStore, 16);
-	}
-
-	public Serialize(teamData: TeamData, buffer?: BitBuffer): BitBuffer {
-		buffer ||= BitBuffer();
-		buffer.writeBits(...bit.ToBits(teamData.id, 4));
-		buffer.writeString(teamData.name);
-		buffer.writeColor3(teamData.color);
-
-		return buffer;
-	}
-
-	public Deserialize(buffer: BitBuffer): TeamData {
-		return {
-			id: bit.FromBits(buffer.readBits(4)),
-			name: buffer.readString(),
-			color: buffer.readColor3(),
-		};
+	constructor() {
+		const serializer = new Sedes.Serializer<TeamData>([
+			["id", Sedes.ToUnsigned(4)],
+			["name", Sedes.ToString()],
+			["color", Sedes.ToColor3()],
+		]);
+		super(serializer, 128);
 	}
 }
 

@@ -1,19 +1,15 @@
-import { HttpService } from "@rbxts/services";
 import Utils from "../shared/Utils";
-import { UnitData } from "shared/DataStore/Stores/UnitsStoreBase";
 import ReplicationQueue from "../shared/ReplicationQueue";
 import BitBuffer from "@rbxts/bitbuffer";
 import Input from "./Input";
-import ClientGameStore from "./DataStore/GameStore";
-import ClientUnitsStore from "./DataStore/UnitsStore";
 import ClientReplicator from "./DataStore/Replicator";
 import Unit from "./Units/Unit";
+import UnitsStore from "./DataStore/UnitsStore";
+import { player } from "./Instances";
 
 const input = Input.Get();
 const replicator = ClientReplicator.Get();
-
-const gameStore = ClientGameStore.Get();
-const unitsStore = gameStore.GetStore("UnitsStore") as ClientUnitsStore;
+const unitsStore = UnitsStore.Get();
 
 export default class Admin {
 	private static instance: Admin;
@@ -45,16 +41,22 @@ export default class Admin {
 		if (mouseHitResult?.Position) {
 			const name = "Dummy";
 			const position = mouseHitResult.Position;
-
 			const unitId = unitsStore.freeIds.shift();
 			if (!unitId) return;
 
-			const unit = new Unit(gameStore, unitId, name, position);
+			const unit = new Unit(unitId, {
+				id: unitId,
+				position: position,
+				name: name,
+				playerId: player.UserId,
+				path: [],
+				health: 100,
+			});
 			unitsStore.Add(unit);
 
 			const queue = new ReplicationQueue();
 			queue.Add("create-unit", (buffer: BitBuffer) => {
-				return unitsStore.Serialize(unit, buffer);
+				return unitsStore.serializer.Ser(unit, buffer);
 			});
 
 			replicator.Replicate(queue);

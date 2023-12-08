@@ -1,16 +1,20 @@
 import BitBuffer from "@rbxts/bitbuffer";
-import GameStore from "./GameStore";
 import { Workspace } from "@rbxts/services";
 import Unit from "client/Units/Unit";
-import UnitsStoreBase from "shared/DataStore/Stores/UnitsStoreBase";
+import UnitsStoreBase, { UnitData } from "shared/DataStore/Stores/UnitsStoreBase";
+import Replicator from "./Replicator";
+
+const replicator = Replicator.Get();
 
 export default class UnitsStore extends UnitsStoreBase {
 	public cache = new Map<number, Unit>();
 	public folder = new Instance("Folder", Workspace);
 
-	constructor(gameStore: GameStore) {
-		super(gameStore);
+	private static instance: UnitsStore;
+	constructor() {
+		super();
 		this.folder.Name = "UnitsCache";
+		UnitsStore.instance = this;
 	}
 
 	public Add(unit: Unit): Unit {
@@ -33,21 +37,12 @@ export default class UnitsStore extends UnitsStoreBase {
 		super.Clear();
 	}
 
-	public OverrideData(buffer: BitBuffer): void {
+	public OverrideCache(newCache: Map<number, Unit>): void {
 		this.Clear();
+		this.cache = newCache;
+	}
 
-		while (buffer.readBits(1)[0] === 1) {
-			const unitData = this.Deserialize(buffer);
-			const unit = new Unit(
-				this.gameStore as GameStore,
-				unitData.id,
-				unitData.name,
-				unitData.position,
-				unitData.playerId,
-				unitData.path,
-				unitData.health,
-			);
-			this.Add(unit);
-		}
+	public static Get() {
+		return UnitsStore.instance || new UnitsStore();
 	}
 }

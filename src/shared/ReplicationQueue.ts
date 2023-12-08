@@ -1,27 +1,25 @@
 import BitBuffer from "@rbxts/bitbuffer";
 
 export default class ReplicationQueue {
-	private buffer;
-	constructor(initialBufferData?: string) {
-		this.buffer = BitBuffer(initialBufferData);
-	}
+	public queue: BitBuffer[] = [];
+	constructor() {}
 
-	public Add(key: string, writeCallback: (buffer: BitBuffer) => BitBuffer) {
-		this.buffer.writeString(key);
-		this.buffer = writeCallback(this.buffer);
-	}
+	public Add(key: string, writeCallback?: (buffer: BitBuffer) => BitBuffer) {
+		const buffer = BitBuffer();
+		buffer.writeString(key);
 
-	public DumpString() {
-		return this.buffer.dumpString();
-	}
-
-	public static Divide(serializedBuffer: string, chunkCallback: (key: string, buffer: BitBuffer) => void) {
-		const buffer = BitBuffer(serializedBuffer);
-
-		// last char is "-" so end of
-		while (buffer.getPointerByte() < buffer.getByteLength()) {
-			const key = buffer.readString();
-			chunkCallback(key, buffer);
+		if (writeCallback) {
+			writeCallback(buffer);
 		}
+
+		this.queue.push(buffer);
+	}
+
+	public Dump() {
+		const dump = [];
+		for (const buffer of this.queue) {
+			dump.push(buffer.dumpString());
+		}
+		return dump;
 	}
 }

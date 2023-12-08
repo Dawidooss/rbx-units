@@ -8,7 +8,6 @@ local UnitMovement = TS.import(script, script.Parent, "UnitMovement").default
 local Pathfinding = TS.import(script, script.Parent, "Pathfinding").default
 local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
 local UnitData = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "DataStore", "Stores", "UnitsStoreBase").UnitData
-local player = TS.import(script, script.Parent.Parent, "Instances").player
 local Unit
 do
 	local super = UnitData
@@ -23,20 +22,11 @@ do
 		local self = setmetatable({}, Unit)
 		return self:constructor(...) or self
 	end
-	function Unit:constructor(gameStore, id, name, position, playerId, path, health)
-		local _exp = id
-		local _exp_1 = name
-		local _exp_2 = position
-		local _condition = playerId
-		if not (_condition ~= 0 and (_condition == _condition and _condition)) then
-			_condition = player.UserId
-		end
-		super.constructor(self, _exp, _exp_1, _exp_2, _condition, path, health)
+	function Unit:constructor(id, unitData)
+		super.constructor(self, unitData)
 		self.maid = Maid.new()
 		self.selectionType = SelectionType.None
 		self.selectionRadius = 1.5
-		self.gameStore = gameStore
-		self.unitsStore = gameStore:GetStore("UnitsStore")
 		self.model = ReplicatedFirst.Units[self.name]:Clone()
 		self.model.Name = self.name .. "#" .. tostring(self.id)
 		self.model:PivotTo(CFrame.new(self.position))
@@ -66,9 +56,9 @@ do
 		self.selectionCircle = ReplicatedFirst:FindFirstChild("SelectionCircle"):Clone()
 		self.selectionCircle.Size = Vector3.new(self.selectionCircle.Size.X, self.selectionRadius * 2, self.selectionRadius * 2)
 		local _fn = self.selectionCircle
-		local _exp_3 = self.model:GetPivot()
+		local _exp = self.model:GetPivot()
 		local _arg0 = CFrame.Angles(0, 0, math.pi / 2)
-		_fn:PivotTo(_exp_3 * _arg0)
+		_fn:PivotTo(_exp * _arg0)
 		self.selectionCircle.Parent = self.model
 		local weld = Instance.new("WeldConstraint", self.selectionCircle)
 		weld.Part0 = self.selectionCircle

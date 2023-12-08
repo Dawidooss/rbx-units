@@ -1,15 +1,14 @@
 import Network from "shared/Network";
 import BitBuffer from "@rbxts/bitbuffer";
 import ReplicationQueue from "shared/ReplicationQueue";
+import { Sedes } from "shared/Sedes";
 
 export default class Replicator {
 	private connections: {
-		[key: string]: (
-			player: Player,
-			buffer: BitBuffer,
-			responseQueue: ReplicationQueue,
-			replicationQueue: ReplicationQueue,
-		) => void;
+		[key: string]: [
+			Sedes.Serializer<any>,
+			(player: Player, data: any, response: ReplicationQueue, replication: ReplicationQueue) => void,
+		];
 	} = {};
 
 	private static instance: Replicator;
@@ -17,41 +16,44 @@ export default class Replicator {
 		Replicator.instance = this;
 
 		Network.BindFunctions({
-			"chunked-data": (player: Player, data: string) => {
-				const responseQueue = new ReplicationQueue();
-				const replicationQueue = new ReplicationQueue();
-				ReplicationQueue.Divide(data, (key: string, buffer: BitBuffer) => {
-					assert(this.connections[key], `Connection ${key} missing in ServerReplicator`);
-					this.connections[key](player, buffer, responseQueue, replicationQueue);
-				});
+			"chunked-data": (player: Player, ...queue: string[]) => {
+				const response = new ReplicationQueue();
+				const replication = new ReplicationQueue();
+				for (const data of queue) {
+					const buffer = BitBuffer(data);
+					const key = buffer.readString();
 
-				if (replicationQueue.DumpString() !== "") {
-					// is not empty
-					this.ReplicateExcept(player, replicationQueue);
+					this.connections[key][1](player, data, response, replication);
 				}
 
-				return [responseQueue.DumpString()];
+				if (replication.queue.size() > 0) {
+					this.ReplicateExcept(player, replication);
+				}
+
+				return replication.Dump();
 			},
 		});
 	}
 
 	public Replicate(player: Player, queue: ReplicationQueue) {
-		Network.FireClient(player, "chunked-data", queue.DumpString());
+		Network.FireClient(player, "chunked-data", queue.Dump());
 	}
 
 	public ReplicateExcept(player: Player, queue: ReplicationQueue) {
-		Network.FireOtherClients(player, "chunked-data", queue.DumpString());
+		Network.FireOtherClients(player, "chunked-data", queue.Dump());
 	}
 
 	public ReplicateAll(queue: ReplicationQueue) {
-		Network.FireAllClients("chunked-data", queue.DumpString());
+		Network.FireAllClients("chunked-data", queue.Dump());
 	}
 
-	public Connect(
+	public Connect<T extends {}>(
 		key: string,
-		callback: (player: Player, buffer: BitBuffer, replicationQueue: ReplicationQueue) => string | void,
+		deserializer: Sedes.Serializer<T>,
+		callback: (player: Player, data: T, responseQueue: ReplicationQueue, replication: ReplicationQueue) => void,
 	) {
-		this.connections[key] = callback;
+		// TODO: add response to callbakc
+		this.connections[key] = [deserializer, callback];
 	}
 
 	public static Get() {

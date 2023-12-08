@@ -1,4 +1,3 @@
-import ServerGameStore from "./GameStore";
 import PlayersStoreBase, { PlayerData } from "shared/DataStore/Stores/PlayersStoreBase";
 import BitBuffer from "@rbxts/bitbuffer";
 import ServerReplicator from "./Replicator";
@@ -7,8 +6,11 @@ import ReplicationQueue from "shared/ReplicationQueue";
 const replicator = ServerReplicator.Get();
 
 export default class PlayersStore extends PlayersStoreBase {
-	constructor(gameStore: ServerGameStore) {
-		super(gameStore);
+	private static instance: PlayersStore;
+
+	constructor() {
+		super();
+		PlayersStore.instance = this;
 	}
 
 	public Add(playerData: PlayerData, queue?: ReplicationQueue): PlayerData {
@@ -17,7 +19,7 @@ export default class PlayersStore extends PlayersStoreBase {
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
 		queue.Add("player-added", (buffer: BitBuffer) => {
-			return this.Serialize(playerData, buffer);
+			return this.serializer.Ser(playerData, buffer);
 		});
 
 		if (!queuePassed) {
@@ -40,5 +42,9 @@ export default class PlayersStore extends PlayersStoreBase {
 		if (!queuePassed) {
 			replicator.ReplicateAll(queue);
 		}
+	}
+
+	public static Get() {
+		return PlayersStore.instance || new PlayersStore();
 	}
 }

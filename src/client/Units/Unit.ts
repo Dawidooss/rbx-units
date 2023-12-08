@@ -4,14 +4,8 @@ import UnitMovement from "client/Units/UnitMovement";
 import Pathfinding from "client/Units/Pathfinding";
 import { SelectionType } from "shared/types";
 import { UnitData } from "shared/DataStore/Stores/UnitsStoreBase";
-import { player } from "client/Instances";
-import GameStore from "client/DataStore/GameStore";
-import UnitsStore from "client/DataStore/UnitsStore";
 
 export default class Unit extends UnitData {
-	public gameStore: GameStore;
-	public unitsStore: UnitsStore;
-
 	public model: UnitModel;
 	public alignOrientation: AlignOrientation;
 	public groundAttachment: Attachment;
@@ -25,19 +19,8 @@ export default class Unit extends UnitData {
 	public selectionRadius = 1.5;
 	private selectionCircle: SelectionCirle;
 
-	constructor(
-		gameStore: GameStore,
-		id: number,
-		name: string,
-		position: Vector3,
-		playerId?: number,
-		path?: Vector3[],
-		health?: number,
-	) {
-		super(id, name, position, playerId || player.UserId, path, health);
-
-		this.gameStore = gameStore;
-		this.unitsStore = gameStore.GetStore("UnitsStore") as UnitsStore;
+	constructor(id: number, unitData: UnitData) {
+		super(unitData);
 
 		this.model = ReplicatedFirst.Units[this.name].Clone();
 		this.model.Name = this.name + "#" + this.id;

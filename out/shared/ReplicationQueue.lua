@@ -13,23 +13,24 @@ do
 		local self = setmetatable({}, ReplicationQueue)
 		return self:constructor(...) or self
 	end
-	function ReplicationQueue:constructor(initialBufferData)
-		self.buffer = BitBuffer(initialBufferData)
+	function ReplicationQueue:constructor()
+		self.queue = {}
 	end
 	function ReplicationQueue:Add(key, writeCallback)
-		self.buffer.writeString(key)
-		self.buffer = writeCallback(self.buffer)
-	end
-	function ReplicationQueue:DumpString()
-		return self.buffer.dumpString()
-	end
-	function ReplicationQueue:Divide(serializedBuffer, chunkCallback)
-		local buffer = BitBuffer(serializedBuffer)
-		-- last char is "-" so end of
-		while buffer.getPointerByte() < buffer.getByteLength() do
-			local key = buffer.readString()
-			chunkCallback(key, buffer)
+		local buffer = BitBuffer()
+		buffer.writeString(key)
+		if writeCallback then
+			writeCallback(buffer)
 		end
+		table.insert(self.queue, buffer)
+	end
+	function ReplicationQueue:Dump()
+		local dump = {}
+		for _, buffer in self.queue do
+			local _arg0 = buffer.dumpString()
+			table.insert(dump, _arg0)
+		end
+		return dump
 	end
 end
 return {

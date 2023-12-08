@@ -5,9 +5,10 @@ import { SelectionType } from "shared/types";
 import BitBuffer from "@rbxts/bitbuffer";
 import ReplicationQueue from "shared/ReplicationQueue";
 import Replicator from "client/DataStore/Replicator";
-import bit from "shared/bit";
+import UnitsStore from "client/DataStore/UnitsStore";
 
 const replicator = Replicator.Get();
+const unitsStore = UnitsStore.Get();
 
 export default class UnitMovement {
 	public unit: Unit;
@@ -44,13 +45,7 @@ export default class UnitMovement {
 		queue ||= new ReplicationQueue();
 
 		queue?.Add("unit-movement", (buffer: BitBuffer) => {
-			const position = this.unit.GetPosition();
-			buffer.writeBits(...bit.ToBits(this.unit.id, 12));
-			buffer.writeBits(...bit.ToBits(math.floor(position.X), 10));
-			buffer.writeBits(...bit.ToBits(math.floor(position.Z), 10));
-
-			this.unit.unitsStore.SerializePath(this.unit.path, buffer);
-			return buffer;
+			return unitsStore.serializer.SerSelected(this.unit, ["id", "position", "path"], buffer);
 		});
 
 		if (!queuePassed) {

@@ -3,13 +3,13 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local Utils = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Utils").default
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local Input = TS.import(script, script.Parent, "Input").default
-local ClientGameStore = TS.import(script, script.Parent, "DataStore", "GameStore").default
 local ClientReplicator = TS.import(script, script.Parent, "DataStore", "Replicator").default
 local Unit = TS.import(script, script.Parent, "Units", "Unit").default
+local UnitsStore = TS.import(script, script.Parent, "DataStore", "UnitsStore").default
+local player = TS.import(script, script.Parent, "Instances").player
 local input = Input:Get()
 local replicator = ClientReplicator:Get()
-local gameStore = ClientGameStore:Get()
-local unitsStore = gameStore:GetStore("UnitsStore")
+local unitsStore = UnitsStore:Get()
 local Admin
 do
 	Admin = setmetatable({}, {
@@ -53,11 +53,18 @@ do
 			if not (unitId ~= 0 and (unitId == unitId and unitId)) then
 				return nil
 			end
-			local unit = Unit.new(gameStore, unitId, name, position)
+			local unit = Unit.new(unitId, {
+				id = unitId,
+				position = position,
+				name = name,
+				playerId = player.UserId,
+				path = {},
+				health = 100,
+			})
 			unitsStore:Add(unit)
 			local queue = ReplicationQueue.new()
 			queue:Add("create-unit", function(buffer)
-				return unitsStore:Serialize(unit, buffer)
+				return unitsStore.serializer.Ser(unit, buffer)
 			end)
 			replicator:Replicate(queue)
 		end

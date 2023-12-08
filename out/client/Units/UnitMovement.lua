@@ -7,8 +7,9 @@ local MovementVisualisation = TS.import(script, script.Parent, "MovementVisualis
 local SelectionType = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "types").SelectionType
 local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local Replicator = TS.import(script, script.Parent.Parent, "DataStore", "Replicator").default
-local bit = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "bit")
+local UnitsStore = TS.import(script, script.Parent.Parent, "DataStore", "UnitsStore").default
 local replicator = Replicator:Get()
+local unitsStore = UnitsStore:Get()
 local UnitMovement
 do
 	UnitMovement = setmetatable({}, {
@@ -53,12 +54,7 @@ do
 		local _result = queue
 		if _result ~= nil then
 			_result:Add("unit-movement", function(buffer)
-				local position = self.unit:GetPosition()
-				buffer.writeBits(unpack(bit:ToBits(self.unit.id, 12)))
-				buffer.writeBits(unpack(bit:ToBits(math.floor(position.X), 10)))
-				buffer.writeBits(unpack(bit:ToBits(math.floor(position.Z), 10)))
-				self.unit.unitsStore:SerializePath(self.unit.path, buffer)
-				return buffer
+				return unitsStore.serializer:SerSelected(self.unit, { "id", "position", "path" }, buffer)
 			end)
 		end
 		if not queuePassed then

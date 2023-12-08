@@ -1,54 +1,37 @@
-import GameStore from "./Stores/GameStoreBase";
 import BitBuffer from "@rbxts/bitbuffer";
+import { Sedes } from "shared/Sedes";
 
-interface idI {
-	id: number;
-}
-
-export default abstract class Store<T extends idI> {
+export default abstract class Store<T extends { id: number }> {
 	public name: string = "Store";
-	public gameStore: GameStore;
 	public cache = new Map<number, T>();
 	public freeIds: number[] = [];
 	public max = 0;
+	public serializer: Sedes.Serializer<T>;
 
-	constructor(gameStore: GameStore, max: number) {
-		this.gameStore = gameStore;
+	constructor(serializer: Sedes.Serializer<T>, max: number) {
 		this.max = max;
+		this.serializer = serializer;
 
-		for (let i = 0; i < max; i++) {
-			this.freeIds.push(i);
+		this.CalculateFreeIds();
+	}
+
+	public CalculateFreeIds() {
+		this.freeIds.clear();
+		for (let i = 0; i < this.max; i++) {
+			if (!this.cache.get(i)) {
+				this.freeIds.push(i);
+			}
 		}
 	}
 
-	public OverrideData(buffer: BitBuffer) {
+	public OverrideCache(newCache: Map<number, T>) {
 		this.Clear();
-
-		while (buffer.readBits(1)[0] === 1) {
-			const data = this.Deserialize(buffer);
-			this.Add(data);
-		}
-	}
-
-	public SerializeCache(buffer?: BitBuffer): BitBuffer {
-		buffer ||= BitBuffer();
-
-		for (const [_, data] of this.cache) {
-			buffer.writeBits(1);
-			this.Serialize(data, buffer);
-		}
-		buffer.writeBits(0);
-
-		return buffer;
+		this.cache = newCache;
 	}
 
 	public Remove(key: number) {
 		this.cache.delete(key);
 		this.freeIds.push(key);
-	}
-
-	public Clear() {
-		this.cache.clear();
 	}
 
 	public Add(value: T): T {
@@ -59,6 +42,20 @@ export default abstract class Store<T extends idI> {
 		if (i) this.freeIds.remove(i);
 		return value;
 	}
-	abstract Serialize(data: T, buffer?: BitBuffer): BitBuffer;
-	abstract Deserialize(buffer: BitBuffer): T;
+
+	public Clear() {
+		this.cache.clear();
+	}
+
+	public SerializeCache(buffer?: BitBuffer): BitBuffer {
+		buffer ||= BitBuffer();
+
+		for (const [_, data] of this.cache) {
+			buffer.writeBits(1);
+			this.serializer.Ser(data, buffer);
+		}
+		buffer.writeBits(0);
+
+		return buffer;
+	}
 }

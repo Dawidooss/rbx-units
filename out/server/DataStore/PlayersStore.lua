@@ -18,8 +18,9 @@ do
 		local self = setmetatable({}, PlayersStore)
 		return self:constructor(...) or self
 	end
-	function PlayersStore:constructor(gameStore)
-		super.constructor(self, gameStore)
+	function PlayersStore:constructor()
+		super.constructor(self)
+		PlayersStore.instance = self
 	end
 	function PlayersStore:Add(playerData, queue)
 		super.Add(self, playerData)
@@ -30,7 +31,7 @@ do
 		end
 		queue = _condition
 		queue:Add("player-added", function(buffer)
-			return self:Serialize(playerData, buffer)
+			return self.serializer.Ser(playerData, buffer)
 		end)
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
@@ -52,6 +53,9 @@ do
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
 		end
+	end
+	function PlayersStore:Get()
+		return PlayersStore.instance or PlayersStore.new()
 	end
 end
 return {
