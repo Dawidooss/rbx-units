@@ -4,6 +4,9 @@ import { Players } from "@rbxts/services";
 import PlayersStore from "./DataStore/PlayersStore";
 import TeamsStore from "./DataStore/TeamsStore";
 import UnitsStore from "./DataStore/UnitsStore";
+import Network from "shared/Network";
+
+Network.BindFunctions({});
 
 const teamsStore = TeamsStore.Get();
 const playersStore = PlayersStore.Get();

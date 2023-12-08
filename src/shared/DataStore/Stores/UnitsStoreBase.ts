@@ -7,7 +7,7 @@ export default class UnitsStoreBase extends Store<UnitData> {
 	constructor() {
 		const serializer = new Sedes.Serializer<UnitData>([
 			["id", Sedes.ToUnsigned(12)],
-			["position", Sedes.ToUnsignedVector2(10, 10)],
+			["position", UnitsStoreBase.SedesPosition],
 			["path", Sedes.ToArray(UnitsStoreBase.SedesPosition)],
 			["health", Sedes.ToUnsigned(7)],
 			["playerId", Sedes.ToUnsigned(20)],
@@ -18,8 +18,9 @@ export default class UnitsStoreBase extends Store<UnitData> {
 
 	public static SedesPosition: Sedes.Method<Vector3> = {
 		Ser: (data, buffer) => {
-			buffer.writeUnsigned(10, data.X);
-			buffer.writeUnsigned(10, data.Z);
+			print(data);
+			buffer.writeUnsigned(10, math.floor(data.X));
+			buffer.writeUnsigned(10, math.floor(data.Z));
 			return buffer;
 		},
 		Des: (buffer) => {

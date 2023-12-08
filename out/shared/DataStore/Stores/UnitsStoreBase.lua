@@ -18,13 +18,14 @@ do
 	end
 	function UnitsStoreBase:constructor()
 		self.name = "UnitsStore"
-		local serializer = Sedes.Serializer.new({ { "id", Sedes.ToUnsigned(12) }, { "position", Sedes.ToUnsignedVector2(10, 10) }, { "path", Sedes.ToArray(UnitsStoreBase.SedesPosition) }, { "health", Sedes.ToUnsigned(7) }, { "playerId", Sedes.ToUnsigned(20) }, { "name", Sedes.ToString() } })
+		local serializer = Sedes.Serializer.new({ { "id", Sedes.ToUnsigned(12) }, { "position", UnitsStoreBase.SedesPosition }, { "path", Sedes.ToArray(UnitsStoreBase.SedesPosition) }, { "health", Sedes.ToUnsigned(7) }, { "playerId", Sedes.ToUnsigned(20) }, { "name", Sedes.ToString() } })
 		super.constructor(self, serializer, 128)
 	end
 	UnitsStoreBase.SedesPosition = {
 		Ser = function(data, buffer)
-			buffer.writeUnsigned(10, data.X)
-			buffer.writeUnsigned(10, data.Z)
+			print(data)
+			buffer.writeUnsigned(10, math.floor(data.X))
+			buffer.writeUnsigned(10, math.floor(data.Z))
 			return buffer
 		end,
 		Des = function(buffer)

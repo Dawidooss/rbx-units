@@ -21,6 +21,7 @@ export namespace Sedes {
 			buffer ||= BitBuffer();
 
 			for (const [key, method] of this.methods) {
+				print(key, data[key]);
 				method.Ser(data[key], buffer);
 			}
 
@@ -98,8 +99,8 @@ export namespace Sedes {
 				return new Vector2(buffer.readUnsigned(xBits), buffer.readUnsigned(yBits));
 			},
 			Ser: (data, buffer) => {
-				buffer.writeUnsigned(10, data.X);
-				buffer.writeUnsigned(10, data.Y);
+				buffer.writeUnsigned(xBits, data.X);
+				buffer.writeUnsigned(yBits, data.Y);
 				return buffer;
 			},
 		};

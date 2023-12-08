@@ -36,6 +36,7 @@ do
 				for _, _binding in self.methods do
 					local key = _binding[1]
 					local method = _binding[2]
+					print(key, data[key])
 					method.Ser(data[key], buffer)
 				end
 				return buffer
@@ -113,8 +114,8 @@ do
 				return Vector2.new(buffer.readUnsigned(xBits), buffer.readUnsigned(yBits))
 			end,
 			Ser = function(data, buffer)
-				buffer.writeUnsigned(10, data.X)
-				buffer.writeUnsigned(10, data.Y)
+				buffer.writeUnsigned(xBits, data.X)
+				buffer.writeUnsigned(yBits, data.Y)
 				return buffer
 			end,
 		}

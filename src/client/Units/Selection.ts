@@ -149,8 +149,6 @@ export default class Selection {
 	}
 
 	public SelectUnits(units: Set<Unit>) {
-		const queue = new ReplicationQueue();
-
 		for (const unit of units) {
 			if (this.selectedUnits.size() >= 100) return;
 			if (this.selectedUnits.has(unit)) return;
@@ -160,8 +158,6 @@ export default class Selection {
 			unit.Select(SelectionType.Selected);
 			this.selectedUnits.add(unit);
 		}
-
-		replicator.Replicate(queue);
 	}
 
 	public DeselectUnits(units: Set<Unit>) {

@@ -14,7 +14,6 @@ local player = _Instances.player
 local GUI = TS.import(script, script.Parent, "GUI").default
 local UnitsStore = TS.import(script, script.Parent.Parent, "DataStore", "UnitsStore").default
 local Replicator = TS.import(script, script.Parent.Parent, "DataStore", "Replicator").default
-local ReplicationQueue = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "ReplicationQueue").default
 local SelectionMethod
 do
 	local _inverse = {}
@@ -162,7 +161,6 @@ do
 		table.clear(self.selectedUnits)
 	end
 	function Selection:SelectUnits(units)
-		local queue = ReplicationQueue.new()
 		for unit in units do
 			-- ▼ ReadonlySet.size ▼
 			local _size = 0
@@ -182,7 +180,6 @@ do
 			unit:Select(SelectionType.Selected)
 			self.selectedUnits[unit] = true
 		end
-		replicator:Replicate(queue)
 	end
 	function Selection:DeselectUnits(units)
 		local _units = units

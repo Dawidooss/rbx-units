@@ -5,6 +5,8 @@ local Players = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_i
 local PlayersStore = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "PlayersStore").default
 local TeamsStore = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "TeamsStore").default
 local UnitsStore = TS.import(script, game:GetService("ServerScriptService"), "DataStore", "UnitsStore").default
+local Network = TS.import(script, game:GetService("ReplicatedStorage"), "Shared", "Network")
+Network:BindFunctions({})
 local teamsStore = TeamsStore:Get()
 local playersStore = PlayersStore:Get()
 local unitsStore = UnitsStore:Get()
