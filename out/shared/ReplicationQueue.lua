@@ -16,18 +16,21 @@ do
 	function ReplicationQueue:constructor()
 		self.queue = {}
 	end
-	function ReplicationQueue:Add(key, writeCallback)
-		local buffer = BitBuffer()
-		buffer.writeString(key)
-		if writeCallback then
-			writeCallback(buffer)
-		end
-		table.insert(self.queue, buffer)
+	function ReplicationQueue:Add(key, buffer, rollback)
+		local keyBuffer = BitBuffer()
+		keyBuffer.writeString(key)
+		local finalBuffer = BitBuffer(keyBuffer.dumpString() .. buffer.dumpString())
+		local _queue = self.queue
+		local _arg0 = {
+			buffer = finalBuffer,
+			rollback = rollback,
+		}
+		table.insert(_queue, _arg0)
 	end
 	function ReplicationQueue:Dump()
 		local dump = {}
-		for _, buffer in self.queue do
-			local _arg0 = buffer.dumpString()
+		for _, data in self.queue do
+			local _arg0 = data.buffer.dumpString()
 			table.insert(dump, _arg0)
 		end
 		return dump

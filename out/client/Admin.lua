@@ -63,9 +63,7 @@ do
 			})
 			unitsStore:Add(unit)
 			local queue = ReplicationQueue.new()
-			queue:Add("create-unit", function(buffer)
-				return unitsStore.serializer.Ser(unit, buffer)
-			end)
+			queue:Add("create-unit", unitsStore.serializer.Ser(unit))
 			replicator:Replicate(queue)
 		end
 	end

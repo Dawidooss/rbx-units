@@ -53,9 +53,7 @@ do
 		queue = _condition
 		local _result = queue
 		if _result ~= nil then
-			_result:Add("unit-movement", function(buffer)
-				return unitsStore.serializer:SerSelected(self.unit, { "id", "position", "path" }, buffer)
-			end)
+			_result:Add("unit-movement", unitsStore.serializer:ToSelected({ "id", "position", "path" }).Ser(self.unit))
 		end
 		if not queuePassed then
 			replicator:Replicate(queue)

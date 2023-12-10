@@ -44,9 +44,16 @@ export default class UnitMovement {
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
 
-		queue?.Add("unit-movement", (buffer: BitBuffer) => {
-			return unitsStore.serializer.SerSelected(this.unit, ["id", "position", "path"], buffer);
-		});
+		queue?.Add(
+			"unit-movement",
+			unitsStore.serializer
+				.ToSelected<{
+					id: number;
+					position: Vector3;
+					path: Vector3[];
+				}>(["id", "position", "path"])
+				.Ser(this.unit),
+		);
 
 		if (!queuePassed) {
 			replicator.Replicate(queue);

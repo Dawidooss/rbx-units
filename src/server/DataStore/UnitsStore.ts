@@ -14,6 +14,27 @@ export default class UnitsStore extends UnitsStoreBase {
 			this.Add(data, replication);
 		});
 
+		replicator.Connect(
+			"unit-movement",
+			this.serializer.ToSelected<{ id: number; position: Vector3; path: Vector3[] }>(["id", "position", "path"]),
+			(player, data, response, replication) => {
+				const unit = this.cache.get(data.id);
+				if (!unit) {
+					response.Add();
+					return;
+				}
+
+				unit.path = data.path;
+				unit.position = data.position;
+
+				// replicationQueue.Add("unit-movement", (writeBuffer) => {
+				// 	buffer.setPointer(startPointer);
+
+				// 	return writeBuffer;
+				// });
+			},
+		);
+
 		UnitsStore.instance = this;
 
 		// replicator.Connect(
@@ -95,9 +116,7 @@ export default class UnitsStore extends UnitsStoreBase {
 
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
-		queue.Add("unit-created", (buffer: BitBuffer) => {
-			return this.serializer.Ser(unitData, buffer);
-		});
+		queue.Add("unit-created", this.serializer.Ser(unitData));
 
 		if (!queuePassed) {
 			replicator.ReplicateAll(queue);
@@ -106,19 +125,27 @@ export default class UnitsStore extends UnitsStoreBase {
 		return unitData;
 	}
 
-	public Remove(unitId: number, queue?: ReplicationQueue): void {
-		super.Remove(unitId);
+	public Remove(unitId: number, queue?: ReplicationQueue) {
+		const unit = super.Remove(unitId);
 
-		const queuePassed = !!queue;
-		queue ||= new ReplicationQueue();
-		queue.Add("unit-removed", (buffer: BitBuffer) => {
-			buffer.writeString(tostring(unitId));
-			return buffer;
-		});
+		if (unit) {
+			const queuePassed = !!queue;
+			queue ||= new ReplicationQueue();
+			queue.Add(
+				"unit-removed",
+				this.serializer
+					.ToSelected<{
+						id: number;
+					}>(["id"])
+					.Ser(unit),
+			);
 
-		if (!queuePassed) {
-			replicator.ReplicateAll(queue);
+			if (!queuePassed) {
+				replicator.ReplicateAll(queue);
+			}
 		}
+
+		return unit;
 	}
 
 	public static Get() {

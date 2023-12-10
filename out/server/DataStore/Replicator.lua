@@ -19,19 +19,19 @@ do
 		self.connections = {}
 		Replicator.instance = self
 		Network:BindFunctions({
-			["chunked-data"] = function(player, ...)
-				local queue = { ... }
+			["chunked-data"] = function(player, queue)
 				local response = ReplicationQueue.new()
 				local replication = ReplicationQueue.new()
-				for _, data in queue do
-					local buffer = BitBuffer(data)
+				for _, serializedData in queue do
+					local buffer = BitBuffer(serializedData)
 					local key = buffer.readString()
+					local data = self.connections[key][1].Des(buffer)
 					self.connections[key][2](player, data, response, replication)
 				end
 				if #replication.queue > 0 then
 					self:ReplicateExcept(player, replication)
 				end
-				return replication:Dump()
+				return response:Dump()
 			end,
 		})
 	end

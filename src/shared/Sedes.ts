@@ -28,16 +28,18 @@ export namespace Sedes {
 			return buffer;
 		};
 
-		public SerSelected(data: T, selected: (keyof T)[], buffer?: BitBuffer) {
-			buffer ||= BitBuffer();
-
-			for (const [key, method] of this.methods) {
-				if (key in selected) {
-					method.Ser(data[key], buffer);
+		public ToSelected<R extends { [key: string]: any }>(keys: (keyof T)[]): Serializer<R> {
+			let methods: [keyof R, Sedes.Method<any>][] = [];
+			for (const key of keys) {
+				const method = this.methods.find((v) => {
+					return v[0] === key;
+				});
+				if (method) {
+					methods.push(method as [keyof R, Sedes.Method<any>]);
 				}
 			}
 
-			return buffer;
+			return new Serializer<R>(methods);
 		}
 	}
 
@@ -130,8 +132,10 @@ export namespace Sedes {
 			},
 			Ser: (data, buffer) => {
 				for (const value of data) {
+					buffer.writeBits(1);
 					method.Ser(value, buffer);
 				}
+				buffer.writeBits(0);
 				return buffer;
 			},
 		};
@@ -150,9 +154,11 @@ export namespace Sedes {
 			},
 			Ser: (data, buffer) => {
 				for (const [key, value] of data) {
+					buffer.writeBits(1);
 					keyMethod.Ser(key, buffer);
 					valueMethod.Ser(value, buffer);
 				}
+				buffer.writeBits(0);
 				return buffer;
 			},
 		};

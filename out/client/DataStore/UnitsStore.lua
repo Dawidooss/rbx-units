@@ -30,14 +30,12 @@ do
 		return unit
 	end
 	function UnitsStore:Remove(unitId)
-		local _cache = self.cache
-		local _unitId = unitId
-		local unit = _cache[_unitId]
+		local unit = super.Remove(self, unitId)
 		local _result = unit
 		if _result ~= nil then
 			_result:Destroy()
 		end
-		super.Remove(self, unitId)
+		return unit
 	end
 	function UnitsStore:Clear()
 		local _cache = self.cache

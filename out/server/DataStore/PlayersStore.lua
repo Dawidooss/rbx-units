@@ -30,29 +30,27 @@ do
 			_condition = ReplicationQueue.new()
 		end
 		queue = _condition
-		queue:Add("player-added", function(buffer)
-			return self.serializer.Ser(playerData, buffer)
-		end)
+		queue:Add("player-added", self.serializer.Ser(playerData))
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
 		end
 		return playerData
 	end
 	function PlayersStore:Remove(playerId, queue)
-		super.Remove(self, playerId)
-		local queuePassed = not not queue
-		local _condition = queue
-		if not queue then
-			_condition = ReplicationQueue.new()
+		local playerData = super.Remove(self, playerId)
+		if playerData then
+			local queuePassed = not not queue
+			local _condition = queue
+			if not queue then
+				_condition = ReplicationQueue.new()
+			end
+			queue = _condition
+			queue:Add("player-removed", self.serializer:ToSelected({ "id" }).Ser(playerData))
+			if not queuePassed then
+				replicator:ReplicateAll(queue)
+			end
 		end
-		queue = _condition
-		queue:Add("player-removed", function(buffer)
-			buffer.writeString(tostring(playerId))
-			return buffer
-		end)
-		if not queuePassed then
-			replicator:ReplicateAll(queue)
-		end
+		return playerData
 	end
 	function PlayersStore:Get()
 		return PlayersStore.instance or PlayersStore.new()

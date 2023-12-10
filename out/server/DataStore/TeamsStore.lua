@@ -30,16 +30,14 @@ do
 			_condition = ReplicationQueue.new()
 		end
 		queue = _condition
-		queue:Add("team-created", function(buffer)
-			return self.serializer.Ser(teamData, buffer)
-		end)
+		queue:Add("team-created", self.serializer.Ser(teamData))
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
 		end
 		return teamData
 	end
 	function TeamsStore:Remove(teamId, queue)
-		super.Remove(self, teamId)
+		local team = super.Remove(self, teamId)
 		-- const queuePassed = !!queue;
 		-- queue ||= new ReplicationQueue();
 		-- queue.Add("team-removed", (buffer: BitBuffer) => {
@@ -49,6 +47,7 @@ do
 		-- if (!queuePassed) {
 		-- replicator.ReplicateAll(queue);
 		-- }
+		return team
 	end
 	function TeamsStore:Get()
 		return TeamsStore.instance or TeamsStore.new()

@@ -18,7 +18,7 @@ do
 	end
 	function PlayersStoreBase:constructor()
 		self.name = "PlayersStore"
-		local serializer = Sedes.Serializer.new({ { "id", Sedes.ToUnsigned(20) }, { "teamId", Sedes.ToUnsigned(4) } })
+		local serializer = Sedes.Serializer.new({ { "id", Sedes.ToUnsigned(40) }, { "teamId", Sedes.ToUnsigned(4) } })
 		super.constructor(self, serializer, 128)
 	end
 end

@@ -44,10 +44,14 @@ do
 	function Store:Remove(key)
 		local _cache = self.cache
 		local _key = key
-		_cache[_key] = nil
-		local _freeIds = self.freeIds
+		local value = _cache[_key]
+		local _cache_1 = self.cache
 		local _key_1 = key
-		table.insert(_freeIds, _key_1)
+		_cache_1[_key_1] = nil
+		local _freeIds = self.freeIds
+		local _key_2 = key
+		table.insert(_freeIds, _key_2)
+		return value
 	end
 	function Store:Add(value)
 		local _cache = self.cache

@@ -17,10 +17,10 @@ do
 	function Replicator:constructor()
 		self.replicationEnabled = false
 		self.connections = {}
+		self.queue = {}
 		Replicator.instance = self
 		Network:BindEvents({
-			["chunked-data"] = function(...)
-				local queue = { ... }
+			["chunked-data"] = function(queue)
 				return function()
 					if not self.replicationEnabled then
 						return nil
@@ -34,8 +34,12 @@ do
 			end,
 		})
 	end
-	Replicator.ChunkedDataReceived = TS.async(function(self, data) end)
 	Replicator.Replicate = TS.async(function(self, queue)
+		if #self.queue > 0 then
+			local _queue = self.queue
+			local _queue_1 = queue
+			table.insert(_queue, _queue_1)
+		end
 		local response = Network:InvokeServer("chunked-data", queue:Dump())
 		-- TODO: handle response
 	end)

@@ -18,9 +18,7 @@ export default class TeamsStore extends TeamsStoreBase {
 
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
-		queue.Add("team-created", (buffer: BitBuffer) => {
-			return this.serializer.Ser(teamData, buffer);
-		});
+		queue.Add("team-created", this.serializer.Ser(teamData));
 
 		if (!queuePassed) {
 			replicator.ReplicateAll(queue);
@@ -29,8 +27,8 @@ export default class TeamsStore extends TeamsStoreBase {
 		return teamData;
 	}
 
-	public Remove(teamId: number, queue?: ReplicationQueue): void {
-		super.Remove(teamId);
+	public Remove(teamId: number, queue?: ReplicationQueue) {
+		const team = super.Remove(teamId);
 
 		// const queuePassed = !!queue;
 		// queue ||= new ReplicationQueue();
@@ -42,6 +40,8 @@ export default class TeamsStore extends TeamsStoreBase {
 		// if (!queuePassed) {
 		// 	replicator.ReplicateAll(queue);
 		// }
+
+		return team;
 	}
 
 	public static Get() {

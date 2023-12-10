@@ -18,7 +18,7 @@ do
 	end
 	function UnitsStoreBase:constructor()
 		self.name = "UnitsStore"
-		local serializer = Sedes.Serializer.new({ { "id", Sedes.ToUnsigned(12) }, { "position", UnitsStoreBase.SedesPosition }, { "path", Sedes.ToArray(UnitsStoreBase.SedesPosition) }, { "health", Sedes.ToUnsigned(7) }, { "playerId", Sedes.ToUnsigned(20) }, { "name", Sedes.ToString() } })
+		local serializer = Sedes.Serializer.new({ { "id", Sedes.ToUnsigned(12) }, { "position", UnitsStoreBase.SedesPosition }, { "path", Sedes.ToArray(UnitsStoreBase.SedesPosition) }, { "health", Sedes.ToUnsigned(7) }, { "playerId", Sedes.ToUnsigned(40) }, { "name", Sedes.ToString() } })
 		super.constructor(self, serializer, 128)
 	end
 	UnitsStoreBase.SedesPosition = {

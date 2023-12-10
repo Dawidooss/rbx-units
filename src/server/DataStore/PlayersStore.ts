@@ -18,9 +18,7 @@ export default class PlayersStore extends PlayersStoreBase {
 
 		const queuePassed = !!queue;
 		queue ||= new ReplicationQueue();
-		queue.Add("player-added", (buffer: BitBuffer) => {
-			return this.serializer.Ser(playerData, buffer);
-		});
+		queue.Add("player-added", this.serializer.Ser(playerData));
 
 		if (!queuePassed) {
 			replicator.ReplicateAll(queue);
@@ -29,19 +27,27 @@ export default class PlayersStore extends PlayersStoreBase {
 		return playerData;
 	}
 
-	public Remove(playerId: number, queue?: ReplicationQueue): void {
-		super.Remove(playerId);
+	public Remove(playerId: number, queue?: ReplicationQueue) {
+		const playerData = super.Remove(playerId);
 
-		const queuePassed = !!queue;
-		queue ||= new ReplicationQueue();
-		queue.Add("player-removed", (buffer: BitBuffer) => {
-			buffer.writeString(tostring(playerId));
-			return buffer;
-		});
+		if (playerData) {
+			const queuePassed = !!queue;
+			queue ||= new ReplicationQueue();
+			queue.Add(
+				"player-removed",
+				this.serializer
+					.ToSelected<{
+						id: number;
+					}>(["id"])
+					.Ser(playerData),
+			);
 
-		if (!queuePassed) {
-			replicator.ReplicateAll(queue);
+			if (!queuePassed) {
+				replicator.ReplicateAll(queue);
+			}
 		}
+
+		return playerData;
 	}
 
 	public static Get() {

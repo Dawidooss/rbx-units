@@ -16,12 +16,14 @@ export default class Replicator {
 		Replicator.instance = this;
 
 		Network.BindFunctions({
-			"chunked-data": (player: Player, ...queue: string[]) => {
+			"chunked-data": (player: Player, queue: string[]) => {
 				const response = new ReplicationQueue();
 				const replication = new ReplicationQueue();
-				for (const data of queue) {
-					const buffer = BitBuffer(data);
+				for (const serializedData of queue) {
+					const buffer = BitBuffer(serializedData);
 					const key = buffer.readString();
+
+					const data = this.connections[key][0].Des(buffer);
 
 					this.connections[key][1](player, data, response, replication);
 				}
@@ -30,7 +32,7 @@ export default class Replicator {
 					this.ReplicateExcept(player, replication);
 				}
 
-				return replication.Dump();
+				return response.Dump();
 			},
 		});
 	}

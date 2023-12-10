@@ -6,7 +6,7 @@ export default class PlayersStoreBase extends Store<PlayerData> {
 
 	constructor() {
 		const serializer = new Sedes.Serializer<PlayerData>([
-			["id", Sedes.ToUnsigned(20)],
+			["id", Sedes.ToUnsigned(40)],
 			["teamId", Sedes.ToUnsigned(4)],
 		]);
 		super(serializer, 128);

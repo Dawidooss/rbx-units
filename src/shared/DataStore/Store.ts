@@ -30,8 +30,12 @@ export default abstract class Store<T extends { id: number }> {
 	}
 
 	public Remove(key: number) {
+		const value = this.cache.get(key);
+
 		this.cache.delete(key);
 		this.freeIds.push(key);
+
+		return value;
 	}
 
 	public Add(value: T): T {

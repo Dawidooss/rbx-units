@@ -23,6 +23,7 @@ do
 		replicator:Connect("create-unit", self.serializer, function(player, data, response, replication)
 			self:Add(data, replication)
 		end)
+		replicator:Connect("unit-movement", self.serializer:ToSelected({ "id", "position", "path" }), function(player, data, response, replication) end)
 		UnitsStore.instance = self
 		-- replicator.Connect(
 		-- "unit-movement",
@@ -93,29 +94,27 @@ do
 			_condition = ReplicationQueue.new()
 		end
 		queue = _condition
-		queue:Add("unit-created", function(buffer)
-			return self.serializer.Ser(unitData, buffer)
-		end)
+		queue:Add("unit-created", self.serializer.Ser(unitData))
 		if not queuePassed then
 			replicator:ReplicateAll(queue)
 		end
 		return unitData
 	end
 	function UnitsStore:Remove(unitId, queue)
-		super.Remove(self, unitId)
-		local queuePassed = not not queue
-		local _condition = queue
-		if not queue then
-			_condition = ReplicationQueue.new()
+		local unit = super.Remove(self, unitId)
+		if unit then
+			local queuePassed = not not queue
+			local _condition = queue
+			if not queue then
+				_condition = ReplicationQueue.new()
+			end
+			queue = _condition
+			queue:Add("unit-removed", self.serializer:ToSelected({ "id" }).Ser(unit))
+			if not queuePassed then
+				replicator:ReplicateAll(queue)
+			end
 		end
-		queue = _condition
-		queue:Add("unit-removed", function(buffer)
-			buffer.writeString(tostring(unitId))
-			return buffer
-		end)
-		if not queuePassed then
-			replicator:ReplicateAll(queue)
-		end
+		return unit
 	end
 	function UnitsStore:Get()
 		return UnitsStore.instance or UnitsStore.new()

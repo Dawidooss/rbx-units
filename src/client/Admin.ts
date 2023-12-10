@@ -55,9 +55,7 @@ export default class Admin {
 			unitsStore.Add(unit);
 
 			const queue = new ReplicationQueue();
-			queue.Add("create-unit", (buffer: BitBuffer) => {
-				return unitsStore.serializer.Ser(unit, buffer);
-			});
+			queue.Append("create-unit", unitsStore.serializer.Ser(unit));
 
 			replicator.Replicate(queue);
 		}

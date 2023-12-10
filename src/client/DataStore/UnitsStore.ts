@@ -23,10 +23,11 @@ export default class UnitsStore extends UnitsStoreBase {
 	}
 
 	public Remove(unitId: number) {
-		const unit = this.cache.get(unitId);
+		const unit = super.Remove(unitId) as Unit;
+
 		unit?.Destroy();
 
-		super.Remove(unitId);
+		return unit;
 	}
 
 	public Clear() {

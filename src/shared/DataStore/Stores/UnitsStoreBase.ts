@@ -10,7 +10,7 @@ export default class UnitsStoreBase extends Store<UnitData> {
 			["position", UnitsStoreBase.SedesPosition],
 			["path", Sedes.ToArray(UnitsStoreBase.SedesPosition)],
 			["health", Sedes.ToUnsigned(7)],
-			["playerId", Sedes.ToUnsigned(20)],
+			["playerId", Sedes.ToUnsigned(40)],
 			["name", Sedes.ToString()],
 		]);
 		super(serializer, 128);

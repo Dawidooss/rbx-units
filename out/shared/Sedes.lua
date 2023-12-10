@@ -43,20 +43,28 @@ do
 			end
 			self.methods = methods
 		end
-		function Serializer:SerSelected(data, selected, buffer)
-			local _condition = buffer
-			if not buffer then
-				_condition = BitBuffer()
-			end
-			buffer = _condition
-			for _, _binding in self.methods do
-				local key = _binding[1]
-				local method = _binding[2]
-				if selected[key] ~= nil then
-					method.Ser(data[key], buffer)
+		function Serializer:ToSelected(keys)
+			local methods = {}
+			for _, key in keys do
+				local _methods = self.methods
+				local _arg0 = function(v)
+					return v[1] == key
+				end
+				-- ▼ ReadonlyArray.find ▼
+				local _result
+				for _i, _v in _methods do
+					if _arg0(_v, _i - 1, _methods) == true then
+						_result = _v
+						break
+					end
+				end
+				-- ▲ ReadonlyArray.find ▲
+				local method = _result
+				if method then
+					table.insert(methods, method)
 				end
 			end
-			return buffer
+			return Serializer.new(methods)
 		end
 	end
 	_container.Serializer = Serializer
@@ -145,8 +153,10 @@ do
 			end,
 			Ser = function(data, buffer)
 				for _, value in data do
+					buffer.writeBits(1)
 					method.Ser(value, buffer)
 				end
+				buffer.writeBits(0)
 				return buffer
 			end,
 		}
@@ -165,9 +175,11 @@ do
 			end,
 			Ser = function(data, buffer)
 				for key, value in data do
+					buffer.writeBits(1)
 					keyMethod.Ser(key, buffer)
 					valueMethod.Ser(value, buffer)
 				end
+				buffer.writeBits(0)
 				return buffer
 			end,
 		}
